@@ -1,0 +1,23 @@
+[dependencies]
+# Graphics and windowing
+winit = "0.29"           # Window creation and event handling
+wgpu = "0.18"            # Modern graphics API (Vulkan/Metal/DX12)
+bytemuck = "1.14"        # Safe transmutation
+
+# Math
+glam = "0.25"            # Fast math library
+nalgebra = "0.32"        # Alternative math library
+
+# Audio
+cpal = "0.15"            # Cross-platform audio
+hound = "3.5"            # WAV file reading
+
+# Asset loading
+image = "0.24"           # Image loading
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"       # JSON serialization
+
+# Utilities
+anyhow = "1.0"           # Error handling
+log = "0.4"              # Logging
+env_logger = "0.10"      # Logging implementation

@@ -1,0 +1,50 @@
+rust-2d-engine/
+├── Cargo.toml
+├── src/
+│   ├── main.rs                 # Engine entry point
+│   ├── engine/
+│   │   ├── mod.rs
+│   │   ├── core.rs             # Core engine struct
+│   │   ├── window.rs           # Window management
+│   │   └── config.rs           # Engine configuration
+│   ├── ecs/
+│   │   ├── mod.rs
+│   │   ├── world.rs            # ECS world
+│   │   ├── entity.rs           # Entity management
+│   │   ├── component.rs        # Component traits
+│   │   └── system.rs           # System execution
+│   ├── render/
+│   │   ├── mod.rs
+│   │   ├── renderer.rs         # Main renderer
+│   │   ├── sprite.rs           # Sprite rendering
+│   │   ├── texture.rs          # Texture management
+│   │   └── shader.rs           # Shader management
+│   ├── input/
+│   │   ├── mod.rs
+│   │   ├── keyboard.rs         # Keyboard input
+│   │   ├── mouse.rs            # Mouse input
+│   │   └── gamepad.rs          # Gamepad input
+│   ├── audio/
+│   │   ├── mod.rs
+│   │   ├── audio_manager.rs    # Audio management
+│   │   └── sound.rs            # Sound playback
+│   ├── physics/
+│   │   ├── mod.rs
+│   │   ├── collision.rs        # Collision detection
+│   │   └── rigidbody.rs        # Physics bodies
+│   ├── scene/
+│   │   ├── mod.rs
+│   │   ├── scene_manager.rs    # Scene management
+│   │   └── scene.rs            # Individual scenes
+│   └── utils/
+│       ├── mod.rs
+│       ├── math.rs             # Math utilities
+│       └── resource.rs         # Resource loading
+├── examples/
+│   ├── basic_sprite.rs
+│   ├── input_test.rs
+│   └── physics_demo.rs
+└── assets/
+    ├── textures/
+    ├── sounds/
+    └── shaders/
