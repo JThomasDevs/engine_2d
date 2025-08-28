@@ -1,10 +1,4 @@
-mod engine;
-mod ecs;
-mod render;
-mod input;
-mod utils;
-
-use engine::Engine;
+use engine_2d::engine::Engine;
 
 fn main() {
     let mut engine = Engine::new();

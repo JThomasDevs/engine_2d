@@ -3,3 +3,4 @@ pub mod window;
 pub mod config;
 
 pub use core::Engine;
+pub use config::EngineConfig;

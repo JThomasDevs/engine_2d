@@ -1,36 +1,27 @@
-use winit::{
-    event::{Event, WindowEvent},
-    event_loop::EventLoop,
-    window::WindowBuilder,
-    dpi::LogicalSize,
-};
+use engine_2d::engine::{Engine, EngineConfig};
 
 fn main() {
-    println!("Creating a basic window...");
+    println!("Creating a basic window using the engine...");
     
-    let event_loop = EventLoop::new().unwrap();
+    // Create a custom configuration for this example
+    let config = EngineConfig {
+        window_title: "Rust 2D Engine - Basic Window Example".to_string(),
+        window_width: 800,
+        window_height: 600,
+        target_fps: Some(60),
+        show_fps: true, // Show FPS for this example
+        vsync: true,
+        fullscreen: false,
+    };
     
-    let window = WindowBuilder::new()
-        .with_title("Rust 2D Engine - Basic Window")
-        .with_inner_size(LogicalSize::new(800, 600))
-        .with_resizable(true)
-        .build(&event_loop)
-        .unwrap();
+    // Create and run the engine
+    let mut engine = Engine::new_with_config(config);
     
-    println!("Window created! Close the window to exit.");
+    println!("Engine created with window: {} ({}x{})", 
+             engine.get_window_manager().get_title(),
+             engine.get_window_manager().get_size().0,
+             engine.get_window_manager().get_size().1);
     
-    event_loop.run(move |event, elwt| {
-        match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => {
-                println!("Window close requested");
-                elwt.exit();
-            }
-            _ => {}
-        }
-    }).unwrap();
-    
-    println!("Window closed.");
+    // Run the engine (this will handle the event loop and window management)
+    engine.run();
 }

@@ -45,6 +45,7 @@
 // - Plan for WebAssembly support in future
 
 use winit::{
+    event::{Event, WindowEvent},
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
     dpi::LogicalSize,
@@ -57,7 +58,7 @@ pub struct WindowManager {
 }
 
 impl WindowManager {
-    pub fn new(config: &EngineConfig) -> Self {
+    pub fn new(config: &EngineConfig) -> (Self, EventLoop<()>) {
         println!("Creating window: {}x{}", config.window_width, config.window_height);
         println!("Window title: {}", config.window_title);
         
@@ -70,14 +71,12 @@ impl WindowManager {
             .build(&event_loop)
             .unwrap();
         
-        // For now, we'll just create the window but not run the event loop
-        // This is a simplified approach - in a real engine you'd want proper event loop integration
         println!("Window created successfully!");
         
-        Self {
+        (Self {
             window,
             should_close: false,
-        }
+        }, event_loop)
     }
     
     pub fn request_close(&mut self) {
@@ -95,5 +94,26 @@ impl WindowManager {
     
     pub fn get_title(&self) -> String {
         self.window.title()
+    }
+    
+    pub fn run_event_loop<F>(event_loop: EventLoop<()>, mut callback: F)
+    where
+        F: FnMut(&Event<()>) -> bool,
+    {
+        event_loop.run(move |event, elwt| {
+            match event {
+                Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
+                    elwt.exit();
+                }
+                Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
+                    // Handle resize events if needed
+                }
+                _ => {
+                    if !callback(&event) {
+                        elwt.exit();
+                    }
+                }
+            }
+        }).unwrap();
     }
 }
