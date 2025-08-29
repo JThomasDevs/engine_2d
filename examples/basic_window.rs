@@ -1,6 +1,6 @@
 use engine_2d::engine::{Engine, EngineConfig};
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Creating a basic window using the engine...");
     
     // Create a custom configuration for this example
@@ -15,7 +15,7 @@ fn main() {
     };
     
     // Create and run the engine
-    let mut engine = Engine::new_with_config(config);
+    let mut engine = Engine::new_with_config(config)?;
     
     println!("Engine created with window: {} ({}x{})", 
              engine.get_window_manager().get_title(),
@@ -24,4 +24,5 @@ fn main() {
     
     // Run the engine (this will handle the event loop and window management)
     engine.run();
+    Ok(())
 }

@@ -35,17 +35,17 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         Self::new_with_config(EngineConfig::default())
     }
     
-    pub fn new_with_config(config: EngineConfig) -> Self {
-        let window_manager = WindowManager::new(&config);
+    pub fn new_with_config(config: EngineConfig) -> Result<Self, Box<dyn std::error::Error>> {
+        let window_manager = WindowManager::new(&config)?;
         
         let renderer = Renderer::new();
         // TODO: Pass the GlWrapper from window_manager to renderer
         
-        Self {
+        Ok(Self {
             is_running: false,
             delta_time: Duration::ZERO,
             last_frame_time: Instant::now(),
@@ -53,7 +53,7 @@ impl Engine {
             keyboard_input: KeyboardInput::new(),
             config,
             renderer,
-        }
+        })
     }
     
     // Getter methods for testing
@@ -80,54 +80,89 @@ impl Engine {
         // Create channels for communication between threads
         let (game_sender, game_receiver): (Sender<GameCommand>, Receiver<GameCommand>) = channel();
         let (render_sender, render_receiver): (Sender<RenderCommand>, Receiver<RenderCommand>) = channel();
+        let (shutdown_sender, shutdown_receiver): (Sender<()>, Receiver<()>) = channel();
         
         // Start game loop thread
         let config = self.config.clone();
         let game_thread = thread::spawn(move || {
+            // Clone config values to avoid concurrent access
+            let target_fps = config.target_fps;
+            let show_fps = config.show_fps;
+
             let mut delta_time = Duration::ZERO;
             let mut last_frame_time = Instant::now();
-            
-            while !shutdown_clone.load(Ordering::Relaxed) {
+
+            // Game loop with proper shutdown handling
+            loop {
+                // Check for shutdown signal from channel (non-blocking)
+                if shutdown_receiver.try_recv().is_ok() {
+                    println!("Game thread received shutdown signal");
+                    break;
+                }
+                
+                // Check atomic shutdown flag (for backward compatibility)
+                if shutdown_clone.load(Ordering::Relaxed) {
+                    println!("Game thread detected shutdown flag");
+                    break;
+                }
+                
+                // Handle game commands (non-blocking)
+                while let Ok(cmd) = game_receiver.try_recv() {
+                    match cmd {
+                        GameCommand::Quit => {
+                            println!("Game thread received quit command");
+                            return; // Exit immediately
+                        }
+                    }
+                }
                 // Update timing
                 let current_time = Instant::now();
                 delta_time = current_time.duration_since(last_frame_time);
                 last_frame_time = current_time;
-                
+
                 // Update game logic
                 // TODO: Call existing update method
-                
+
                 // Send render command
                 if render_sender.send(RenderCommand::Render).is_err() {
                     break; // Main thread closed
                 }
-                
+
                 // Frame rate limiting and FPS calculation
-                if let Some(target_fps) = config.target_fps {
+                if let Some(target_fps) = target_fps {
                     let frame_time = Duration::from_secs_f32(1.0 / target_fps as f32);
                     if delta_time < frame_time {
                         thread::sleep(frame_time - delta_time);
                         // Use target FPS for display when limiting
-                        if config.show_fps {
+                        if show_fps {
                             println!("Engine running - FPS: {}", target_fps);
                         }
                     } else {
                         // Use actual FPS when not limiting
-                        if delta_time.as_millis() > 0 && config.show_fps {
+                        if delta_time.as_millis() > 0 && show_fps {
                             let fps = 1000 / delta_time.as_millis();
                             println!("Engine running - FPS: {}", fps);
+                        } else if delta_time.as_millis() == 0 && show_fps {
+                            println!("Engine running - FPS: >1000");
                         }
                     }
                 } else {
                     // No frame rate limiting, use actual FPS
-                    if delta_time.as_millis() > 0 && config.show_fps {
+                    if delta_time.as_millis() > 0 && show_fps {
                         let fps = 1000 / delta_time.as_millis();
                         println!("Engine running - FPS: {}", fps);
+                    } else if delta_time.as_millis() == 0 && show_fps {
+                        println!("Engine running - FPS: >1000");
                     }
                 }
-                
+
                 // Small delay to prevent busy waiting
                 thread::sleep(Duration::from_millis(1));
             }
+            
+            // Cleanup before exiting
+            println!("Game thread cleaning up...");
+            // TODO: Add any game-specific cleanup here (e.g., save game state, close files, etc.)
         });
         
         // Main thread handles GLFW events and rendering
@@ -150,6 +185,8 @@ impl Engine {
             
             if should_close {
                 shutdown.store(true, Ordering::Relaxed);
+                // Send shutdown signal through channel for immediate response
+                let _ = shutdown_sender.send(());
                 self.window_manager.request_close();
                 break; // Exit immediately after sending quit command
             }
@@ -165,17 +202,26 @@ impl Engine {
             }
         }
         
-        // Signal shutdown and wait briefly for game thread
+        // Signal shutdown to game thread
         shutdown.store(true, Ordering::Relaxed);
+        let _ = shutdown_sender.send(());
+        let _ = game_sender.send(GameCommand::Quit);
         
-        // Wait for game thread with timeout
-        let timeout = Duration::from_millis(100);
-        let start = Instant::now();
-        while start.elapsed() < timeout {
-            if game_thread.is_finished() {
-                break;
+        // Wait for game thread to finish with proper join
+        println!("Waiting for game thread to finish...");
+        match game_thread.join() {
+            Ok(_) => {
+                println!("Game thread finished successfully");
             }
-            thread::sleep(Duration::from_millis(1));
+            Err(e) => {
+                eprintln!("Game thread panicked: {:?}", e);
+                // Log the panic details for debugging
+                if let Some(s) = e.downcast_ref::<String>() {
+                    eprintln!("Panic message: {}", s);
+                } else if let Some(s) = e.downcast_ref::<&str>() {
+                    eprintln!("Panic message: {}", s);
+                }
+            }
         }
         
         println!("Engine stopped.");
@@ -190,6 +236,6 @@ impl Engine {
 // This allows Engine::from(config) syntax
 impl From<EngineConfig> for Engine {
     fn from(config: EngineConfig) -> Self {
-        Self::new_with_config(config)
+        Self::new_with_config(config).expect("Failed to create engine from config")
     }
 }

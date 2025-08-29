@@ -3,7 +3,7 @@ use engine_2d::render::renderer::Renderer;
 
 use glam::Vec2;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Basic Renderer Example");
     println!("Demonstrating the safe OpenGL wrapper and renderer capabilities");
     
@@ -19,7 +19,7 @@ fn main() {
     };
     
     // Create engine
-    let mut engine = Engine::new_with_config(config);
+    let mut engine = Engine::new_with_config(config)?;
     
     println!("Engine created successfully!");
     println!("Window: {} ({}x{})", 
@@ -77,4 +77,5 @@ fn main() {
     
     // Run the engine
     engine.run();
+    Ok(())
 }

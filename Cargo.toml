@@ -3,15 +3,19 @@ name = "engine_2d"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["gl"]
+gl = ["dep:gl", "dep:glfw"]
+
 [dependencies]
 # Cross-platform terminal input
 crossterm = "0.27"
 
 # Cross-platform window management and OpenGL context creation
-glfw = "0.50"
+glfw = { version = "0.60", optional = true }
 
 # Cross-platform OpenGL bindings
-gl = "0.14"
+gl = { version = "0.14", optional = true }
 
 # Cross-platform math library
 glam = "0.25"

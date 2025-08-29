@@ -43,9 +43,11 @@
 // - All unsafe OpenGL code is contained in safe wrappers
 // - Plan for WebAssembly support in future
 
+#[cfg(feature = "gl")]
 use glfw::{Glfw, Window as GlfwWindow, Context, WindowMode, WindowHint, Action, Key as GlfwKey};
 use std::sync::mpsc::Receiver;
 use super::config::EngineConfig;
+#[cfg(feature = "gl")]
 use crate::render::gl_wrapper::GlWrapper;
 
 pub struct WindowManager {
@@ -53,16 +55,18 @@ pub struct WindowManager {
     pub window: GlfwWindow,
     pub events: Receiver<(f64, glfw::WindowEvent)>,
     pub should_close: bool,
+    #[cfg(feature = "gl")]
     pub gl_wrapper: GlWrapper,
+    pub title: String,
 }
 
 impl WindowManager {
-    pub fn new(config: &EngineConfig) -> Self {
+    pub fn new(config: &EngineConfig) -> Result<Self, Box<dyn std::error::Error>> {
         println!("Creating window: {}x{}", config.window_width, config.window_height);
         println!("Window title: {}", config.window_title);
         
         // Initialize GLFW
-        let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+        let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS)?;
         
         // Configure GLFW for OpenGL
         glfw.window_hint(WindowHint::ContextVersion(3, 3));
@@ -75,7 +79,12 @@ impl WindowManager {
             config.window_height as u32,
             &config.window_title,
             WindowMode::Windowed
-        ).unwrap();
+        ).ok_or_else(|| {
+            format!(
+                "Failed to create GLFW window with parameters: width={}, height={}, title='{}'",
+                config.window_width, config.window_height, config.window_title
+            )
+        })?;
         
         // Make the context current
         window.make_current();
@@ -85,12 +94,15 @@ impl WindowManager {
         window.set_framebuffer_size_polling(true);
         window.set_close_polling(true);
         
-        println!("Window created successfully!");
-        
-        // Initialize OpenGL context
-        println!("Initializing OpenGL context...");
-        
+        #[cfg(feature = "gl")]
         let mut gl_wrapper = GlWrapper::new();
+        #[cfg(feature = "gl")]
+        if let Err(e) = gl_wrapper.initialize(&mut window) {
+            return Err(format!("Failed to initialize OpenGL context: {}", e).into());
+        }
+        #[cfg(feature = "gl")]
+        println!("OpenGL context initialized successfully!");
+        #[cfg(feature = "gl")]
         if let Err(e) = gl_wrapper.initialize(&mut window) {
             println!("Warning: Failed to initialize OpenGL context: {}", e);
             println!("Continuing with mock OpenGL wrapper...");
@@ -98,13 +110,15 @@ impl WindowManager {
             println!("OpenGL context initialized successfully!");
         }
         
-        Self {
+        Ok(Self {
             glfw,
             window,
             events,
             should_close: false,
+            #[cfg(feature = "gl")]
             gl_wrapper,
-        }
+            title: config.window_title.clone(),
+        })
     }
     
     pub fn request_close(&mut self) {
@@ -121,9 +135,12 @@ impl WindowManager {
     }
     
     pub fn get_title(&self) -> String {
-        // GLFW doesn't have a get_title method, so we'll store the title ourselves
-        // For now, return a default title
-        "GLFW Window".to_string()
+        self.title.clone()
+    }
+    
+    pub fn set_title(&mut self, title: &str) {
+        self.title = title.to_string();
+        self.window.set_title(title);
     }
     
     pub fn poll_events(&mut self) {
@@ -152,7 +169,14 @@ impl WindowManager {
                 }
                 glfw::WindowEvent::FramebufferSize(width, height) => {
                     // Handle window resize - update viewport
-                    println!("Window resized to {}x{}", width, height);
+                    #[cfg(feature = "gl")]
+                    if let Err(e) = self.gl_wrapper.set_viewport(0, 0, width, height) {
+                        println!("Warning: Failed to update viewport: {}", e);
+                    } else {
+                        println!("Window resized to {}x{} - viewport updated", width, height);
+                    }
+                    #[cfg(not(feature = "gl"))]
+                    println!("Window resized to {}x{} (OpenGL disabled)", width, height);
                 }
                 glfw::WindowEvent::Size(width, height) => {
                     // Handle window size change

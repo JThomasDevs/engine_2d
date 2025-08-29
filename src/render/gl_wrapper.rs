@@ -21,7 +21,7 @@ impl GlWrapper {
     /// Initialize OpenGL context with GLFW window
     pub fn initialize(&mut self, window: &mut glfw::Window) -> Result<(), String> {
         // Load OpenGL function pointers using the provided window
-        gl::load_with(|s| window.get_proc_address(s) as *const _);
+        gl::load_with(|s| window.get_proc_address(s).map_or(std::ptr::null(), |f| f as *const _));
         
         // Mark as initialized
         self.initialized = true;
@@ -113,7 +113,8 @@ impl GlWrapper {
     pub fn get_uniform_location(&self, program: u32, name: &str) -> Result<i32, String> {
         self.check_initialized()?;
         unsafe {
-            let c_str = CString::new(name).unwrap();
+            let c_str = CString::new(name)
+               .map_err(|_| "Invalid uniform name: contains null byte")?;
             Ok(gl::GetUniformLocation(program, c_str.as_ptr() as *const i8))
         }
     }
@@ -140,7 +141,11 @@ impl GlWrapper {
     pub fn create_shader(&self, shader_type: u32) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
-            Ok(gl::CreateShader(shader_type))
+            let shader = gl::CreateShader(shader_type);
+            if shader == 0 {
+                return Err("Failed to create shader".to_string());
+            }
+            Ok(shader)
         }
     }
     
@@ -180,7 +185,11 @@ impl GlWrapper {
     pub fn create_program(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
-            Ok(gl::CreateProgram())
+            let program = gl::CreateProgram();
+            if program == 0 {
+                return Err("Failed to create program".to_string());
+            }
+            Ok(program)
         }
     }
     
@@ -230,6 +239,12 @@ impl GlWrapper {
         unsafe {
             let mut vao = 0;
             gl::GenVertexArrays(1, &mut vao);
+            
+            if vao == 0 {
+                let error = gl::GetError();
+                return Err(format!("Failed to generate vertex array object. OpenGL error: {}", error));
+            }
+            
             Ok(vao)
         }
     }
@@ -240,6 +255,12 @@ impl GlWrapper {
         unsafe {
             let mut buffer = 0;
             gl::GenBuffers(1, &mut buffer);
+
+            if buffer == 0 {
+                let error = gl::GetError();
+                return Err(format!("Failed to generate buffer. OpenGL error: {}", error));
+            }
+
             Ok(buffer)
         }
     }
@@ -256,10 +277,16 @@ impl GlWrapper {
     /// Set buffer data
     pub fn set_buffer_data(&self, target: u32, data: &[f32], usage: u32) -> Result<(), String> {
         self.check_initialized()?;
+        
+        let byte_count = data.len()
+            .checked_mul(std::mem::size_of::<f32>())
+            .and_then(|v| v.try_into().ok())
+            .ok_or_else(|| "Buffer size overflow: data too large for OpenGL buffer".to_string())?;
+        
         unsafe {
             gl::BufferData(
                 target,
-                (data.len() * std::mem::size_of::<f32>()) as isize,
+                byte_count,
                 data.as_ptr() as *const _,
                 usage,
             );
@@ -268,10 +295,10 @@ impl GlWrapper {
     }
     
     /// Set vertex attribute pointer
-    pub fn set_vertex_attrib_pointer(&self, index: u32, size: i32, data_type: u32, normalized: bool, stride: i32, offset: *const std::ffi::c_void) -> Result<(), String> {
+    pub fn set_vertex_attrib_pointer(&self, index: u32, size: i32, data_type: u32, normalized: bool, stride: i32, offset: usize) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
-            gl::VertexAttribPointer(index, size, data_type, normalized as u8, stride, offset);
+            gl::VertexAttribPointer(index, size, data_type, normalized as u8, stride, offset as *const std::ffi::c_void);
         }
         Ok(())
     }
@@ -285,10 +312,30 @@ impl GlWrapper {
         Ok(())
     }
     
-    /// Swap buffers
-    pub fn swap_buffers(&self) -> Result<(), String> {
+    /// Delete program
+    pub fn delete_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
-        // TODO: Implement buffer swapping when we have proper OpenGL context
+        unsafe {
+            gl::DeleteProgram(program);
+        }
+        Ok(())
+    }
+    
+    /// Delete vertex array object
+    pub fn delete_vertex_array(&self, vao: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::DeleteVertexArrays(1, &vao);
+        }
+        Ok(())
+    }
+    
+    /// Delete buffer
+    pub fn delete_buffer(&self, buffer: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::DeleteBuffers(1, &buffer);
+        }
         Ok(())
     }
 }
