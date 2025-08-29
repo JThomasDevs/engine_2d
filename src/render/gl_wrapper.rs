@@ -1,0 +1,294 @@
+use gl;
+use std::ffi::CString;
+use glfw::{Glfw, Window as GlfwWindow};
+
+/// Safe wrapper around OpenGL functionality
+pub struct GlWrapper {
+    initialized: bool,
+    glfw: Option<Glfw>,
+    window: Option<GlfwWindow>,
+}
+
+impl GlWrapper {
+    pub fn new() -> Self {
+        Self {
+            initialized: false,
+            glfw: None,
+            window: None,
+        }
+    }
+    
+    /// Initialize OpenGL context with GLFW window
+    pub fn initialize(&mut self, window: &mut glfw::Window) -> Result<(), String> {
+        // Load OpenGL function pointers using the provided window
+        gl::load_with(|s| window.get_proc_address(s) as *const _);
+        
+        // Mark as initialized
+        self.initialized = true;
+        
+        Ok(())
+    }
+    
+    /// Check if OpenGL is initialized
+    fn check_initialized(&self) -> Result<(), String> {
+        if !self.initialized {
+            return Err("OpenGL context not initialized".to_string());
+        }
+        Ok(())
+    }
+    
+    /// Set the viewport dimensions
+    pub fn set_viewport(&self, x: i32, y: i32, width: i32, height: i32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::Viewport(x, y, width, height);
+        }
+        Ok(())
+    }
+    
+    /// Set the clear color
+    pub fn set_clear_color(&self, r: f32, g: f32, b: f32, a: f32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::ClearColor(r, g, b, a);
+        }
+        Ok(())
+    }
+    
+    /// Clear the color buffer
+    pub fn clear_color_buffer(&self) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::Clear(gl::COLOR_BUFFER_BIT);
+        }
+        Ok(())
+    }
+    
+    /// Enable blending
+    pub fn enable_blending(&self) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::Enable(gl::BLEND);
+        }
+        Ok(())
+    }
+    
+    /// Set blend function
+    pub fn set_blend_func(&self, src: u32, dst: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::BlendFunc(src, dst);
+        }
+        Ok(())
+    }
+    
+    /// Use a shader program
+    pub fn use_program(&self, program: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::UseProgram(program);
+        }
+        Ok(())
+    }
+    
+    /// Set a 3D float uniform
+    pub fn set_uniform_3f(&self, location: i32, x: f32, y: f32, z: f32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::Uniform3f(location, x, y, z);
+        }
+        Ok(())
+    }
+    
+    /// Set a 2D float uniform
+    pub fn set_uniform_2f(&self, location: i32, x: f32, y: f32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::Uniform2f(location, x, y);
+        }
+        Ok(())
+    }
+    
+    /// Get uniform location
+    pub fn get_uniform_location(&self, program: u32, name: &str) -> Result<i32, String> {
+        self.check_initialized()?;
+        unsafe {
+            let c_str = CString::new(name).unwrap();
+            Ok(gl::GetUniformLocation(program, c_str.as_ptr() as *const i8))
+        }
+    }
+    
+    /// Bind vertex array object
+    pub fn bind_vertex_array(&self, vao: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::BindVertexArray(vao);
+        }
+        Ok(())
+    }
+    
+    /// Draw arrays
+    pub fn draw_arrays(&self, mode: u32, first: i32, count: i32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::DrawArrays(mode, first, count);
+        }
+        Ok(())
+    }
+    
+    /// Create shader
+    pub fn create_shader(&self, shader_type: u32) -> Result<u32, String> {
+        self.check_initialized()?;
+        unsafe {
+            Ok(gl::CreateShader(shader_type))
+        }
+    }
+    
+    /// Set shader source
+    pub fn set_shader_source(&self, shader: u32, source: &str) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            let c_str = CString::new(source).map_err(|_| "Invalid shader source")?;
+            gl::ShaderSource(shader, 1, &c_str.as_ptr(), std::ptr::null());
+            Ok(())
+        }
+    }
+    
+    /// Compile shader
+    pub fn compile_shader(&self, shader: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::CompileShader(shader);
+            
+            let mut success = 0;
+            gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
+            
+            if success == 0 {
+                let mut len = 0;
+                gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
+                let mut buffer = vec![0u8; len as usize];
+                gl::GetShaderInfoLog(shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                let error = String::from_utf8_lossy(&buffer).to_string();
+                return Err(format!("Shader compilation failed: {}", error));
+            }
+            
+            Ok(())
+        }
+    }
+    
+    /// Create program
+    pub fn create_program(&self) -> Result<u32, String> {
+        self.check_initialized()?;
+        unsafe {
+            Ok(gl::CreateProgram())
+        }
+    }
+    
+    /// Attach shader to program
+    pub fn attach_shader(&self, program: u32, shader: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::AttachShader(program, shader);
+        }
+        Ok(())
+    }
+    
+    /// Link program
+    pub fn link_program(&self, program: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::LinkProgram(program);
+            
+            let mut success = 0;
+            gl::GetProgramiv(program, gl::LINK_STATUS, &mut success);
+            
+            if success == 0 {
+                let mut len = 0;
+                gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
+                let mut buffer = vec![0u8; len as usize];
+                gl::GetProgramInfoLog(program, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                let error = String::from_utf8_lossy(&buffer).to_string();
+                return Err(format!("Program linking failed: {}", error));
+            }
+            
+            Ok(())
+        }
+    }
+    
+    /// Delete shader
+    pub fn delete_shader(&self, shader: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::DeleteShader(shader);
+        }
+        Ok(())
+    }
+    
+    /// Generate vertex array object
+    pub fn gen_vertex_array(&self) -> Result<u32, String> {
+        self.check_initialized()?;
+        unsafe {
+            let mut vao = 0;
+            gl::GenVertexArrays(1, &mut vao);
+            Ok(vao)
+        }
+    }
+    
+    /// Generate buffer
+    pub fn gen_buffer(&self) -> Result<u32, String> {
+        self.check_initialized()?;
+        unsafe {
+            let mut buffer = 0;
+            gl::GenBuffers(1, &mut buffer);
+            Ok(buffer)
+        }
+    }
+    
+    /// Bind buffer
+    pub fn bind_buffer(&self, target: u32, buffer: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::BindBuffer(target, buffer);
+        }
+        Ok(())
+    }
+    
+    /// Set buffer data
+    pub fn set_buffer_data(&self, target: u32, data: &[f32], usage: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::BufferData(
+                target,
+                (data.len() * std::mem::size_of::<f32>()) as isize,
+                data.as_ptr() as *const _,
+                usage,
+            );
+        }
+        Ok(())
+    }
+    
+    /// Set vertex attribute pointer
+    pub fn set_vertex_attrib_pointer(&self, index: u32, size: i32, data_type: u32, normalized: bool, stride: i32, offset: *const std::ffi::c_void) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::VertexAttribPointer(index, size, data_type, normalized as u8, stride, offset);
+        }
+        Ok(())
+    }
+    
+    /// Enable vertex attribute array
+    pub fn enable_vertex_attrib_array(&self, index: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::EnableVertexAttribArray(index);
+        }
+        Ok(())
+    }
+    
+    /// Swap buffers
+    pub fn swap_buffers(&self) -> Result<(), String> {
+        self.check_initialized()?;
+        // TODO: Implement buffer swapping when we have proper OpenGL context
+        Ok(())
+    }
+}

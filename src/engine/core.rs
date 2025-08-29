@@ -1,13 +1,23 @@
 use std::time::{Duration, Instant};
-use std::sync::{Arc, Mutex};
-use winit::event_loop::EventLoop;
-use winit::event::{Event, WindowEvent, ElementState};
-use winit::keyboard::{KeyCode, PhysicalKey};
+use std::sync::mpsc::{channel, Sender, Receiver};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread;
+use glfw::{WindowEvent, Action, Key as GlfwKey};
 use crate::input::KeyboardInput;
+use crate::render::renderer::Renderer;
 use super::window::WindowManager;
 use super::config::EngineConfig;
 
+#[derive(Debug)]
+enum GameCommand {
+    Quit,
+}
 
+#[derive(Debug)]
+enum RenderCommand {
+    Render,
+}
 
 pub struct Engine {
     // Engine state
@@ -17,9 +27,11 @@ pub struct Engine {
     
     // Window and input systems
     window_manager: WindowManager,
-    event_loop: Option<EventLoop<()>>,
     keyboard_input: KeyboardInput,
     config: EngineConfig,
+    
+    // Rendering system
+    renderer: Renderer,
 }
 
 impl Engine {
@@ -28,16 +40,19 @@ impl Engine {
     }
     
     pub fn new_with_config(config: EngineConfig) -> Self {
-        let (window_manager, event_loop) = WindowManager::new(&config);
+        let window_manager = WindowManager::new(&config);
+        
+        let renderer = Renderer::new();
+        // TODO: Pass the GlWrapper from window_manager to renderer
         
         Self {
             is_running: false,
             delta_time: Duration::ZERO,
             last_frame_time: Instant::now(),
             window_manager,
-            event_loop: Some(event_loop),
             keyboard_input: KeyboardInput::new(),
             config,
+            renderer,
         }
     }
     
@@ -58,80 +73,109 @@ impl Engine {
                  self.window_manager.get_size().1);
         println!("Press 'Q' or 'ESC' to quit");
         
-        // Create shared state for the event loop
-        let is_running = Arc::new(Mutex::new(true));
-        let delta_time = Arc::new(Mutex::new(Duration::ZERO));
-        let last_frame_time = Arc::new(Mutex::new(Instant::now()));
-        let config = self.config.clone();
+        // Create shared shutdown flag
+        let shutdown = Arc::new(AtomicBool::new(false));
+        let shutdown_clone = Arc::clone(&shutdown);
         
-        // Run the event loop
-        if let Some(event_loop) = self.event_loop.take() {
-            let is_running_clone = Arc::clone(&is_running);
-            let delta_time_clone = Arc::clone(&delta_time);
-            let last_frame_time_clone = Arc::clone(&last_frame_time);
+        // Create channels for communication between threads
+        let (game_sender, game_receiver): (Sender<GameCommand>, Receiver<GameCommand>) = channel();
+        let (render_sender, render_receiver): (Sender<RenderCommand>, Receiver<RenderCommand>) = channel();
+        
+        // Start game loop thread
+        let config = self.config.clone();
+        let game_thread = thread::spawn(move || {
+            let mut delta_time = Duration::ZERO;
+            let mut last_frame_time = Instant::now();
             
-            WindowManager::run_event_loop(event_loop, move |event| {
-                // Handle different event types
-                match event {
-                    Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
-                        *is_running_clone.lock().unwrap() = false;
-                    }
-                    Event::WindowEvent { event: WindowEvent::KeyboardInput { event: winit::event::KeyEvent { physical_key, state: key_state, .. }, .. }, .. } => {
-                        // Handle keyboard input
-                        match (physical_key, key_state) {
-                            (PhysicalKey::Code(KeyCode::KeyQ), ElementState::Pressed) |
-                            (PhysicalKey::Code(KeyCode::Escape), ElementState::Pressed) => {
-                                *is_running_clone.lock().unwrap() = false;
-                            }
-                            _ => {}
+            while !shutdown_clone.load(Ordering::Relaxed) {
+                // Update timing
+                let current_time = Instant::now();
+                delta_time = current_time.duration_since(last_frame_time);
+                last_frame_time = current_time;
+                
+                // Update game logic
+                // TODO: Call existing update method
+                
+                // Send render command
+                if render_sender.send(RenderCommand::Render).is_err() {
+                    break; // Main thread closed
+                }
+                
+                // Frame rate limiting and FPS calculation
+                if let Some(target_fps) = config.target_fps {
+                    let frame_time = Duration::from_secs_f32(1.0 / target_fps as f32);
+                    if delta_time < frame_time {
+                        thread::sleep(frame_time - delta_time);
+                        // Use target FPS for display when limiting
+                        if config.show_fps {
+                            println!("Engine running - FPS: {}", target_fps);
+                        }
+                    } else {
+                        // Use actual FPS when not limiting
+                        if delta_time.as_millis() > 0 && config.show_fps {
+                            let fps = 1000 / delta_time.as_millis();
+                            println!("Engine running - FPS: {}", fps);
                         }
                     }
-                    Event::AboutToWait => {
-                        // This is called before the event loop waits for events
-                        // We can use this for our game loop
-                        let running = *is_running_clone.lock().unwrap();
-                        if running {
-                            // Update timing
-                            let current_time = Instant::now();
-                            let mut last_time = last_frame_time_clone.lock().unwrap();
-                            let mut delta = delta_time_clone.lock().unwrap();
-                            *delta = current_time.duration_since(*last_time);
-                            *last_time = current_time;
-                            drop(last_time); // Release lock early
-                            drop(delta); // Release lock early
-                            
-                            // Process events (simplified for now)
-                            // TODO: Integrate with existing input system
-                            
-                            // Update game logic
-                            // TODO: Call existing update method
-                            
-                            // Render frame
-                            let delta = *delta_time_clone.lock().unwrap();
-                            if delta.as_millis() > 0 {
-                                let fps = 1000 / delta.as_millis();
-                                if config.show_fps {
-                                    println!("Engine running - FPS: {}", fps);
-                                }
-                            }
-                            
-                            // Frame rate limiting
-                            if let Some(target_fps) = config.target_fps {
-                                let frame_time = Duration::from_secs_f32(1.0 / target_fps as f32);
-                                let delta = *delta_time_clone.lock().unwrap();
-                                if delta < frame_time {
-                                    std::thread::sleep(frame_time - delta);
-                                }
-                            }
-                        }
-                    }
-                    _ => {
-                        // Handle other events if needed
+                } else {
+                    // No frame rate limiting, use actual FPS
+                    if delta_time.as_millis() > 0 && config.show_fps {
+                        let fps = 1000 / delta_time.as_millis();
+                        println!("Engine running - FPS: {}", fps);
                     }
                 }
                 
-                *is_running_clone.lock().unwrap()
+                // Small delay to prevent busy waiting
+                thread::sleep(Duration::from_millis(1));
+            }
+        });
+        
+        // Main thread handles GLFW events and rendering
+        while !self.window_manager.should_close() {
+            // Poll GLFW events (this can block, but that's OK in main thread)
+            self.window_manager.poll_events();
+            
+            // Process events
+            let mut should_close = false;
+            self.window_manager.process_events(|event| {
+                match event {
+                    WindowEvent::Key(GlfwKey::Escape, _, Action::Press, _) |
+                    WindowEvent::Key(GlfwKey::Q, _, Action::Press, _) => {
+                        should_close = true;
+                        false
+                    }
+                    _ => true,
+                }
             });
+            
+            if should_close {
+                shutdown.store(true, Ordering::Relaxed);
+                self.window_manager.request_close();
+                break; // Exit immediately after sending quit command
+            }
+            
+            // Handle render commands from game thread
+            if let Ok(cmd) = render_receiver.try_recv() {
+                match cmd {
+                    RenderCommand::Render => {
+                        // TODO: Add actual rendering calls here when OpenGL context is ready
+                        self.window_manager.swap_buffers();
+                    }
+                }
+            }
+        }
+        
+        // Signal shutdown and wait briefly for game thread
+        shutdown.store(true, Ordering::Relaxed);
+        
+        // Wait for game thread with timeout
+        let timeout = Duration::from_millis(100);
+        let start = Instant::now();
+        while start.elapsed() < timeout {
+            if game_thread.is_finished() {
+                break;
+            }
+            thread::sleep(Duration::from_millis(1));
         }
         
         println!("Engine stopped.");

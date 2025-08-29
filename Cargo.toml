@@ -7,8 +7,8 @@ edition = "2024"
 # Cross-platform terminal input
 crossterm = "0.27"
 
-# Cross-platform window management
-winit = "0.29"
+# Cross-platform window management and OpenGL context creation
+glfw = "0.50"
 
 # Cross-platform OpenGL bindings
 gl = "0.14"
