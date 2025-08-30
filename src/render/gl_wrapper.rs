@@ -119,6 +119,50 @@ impl GlWrapper {
         }
     }
     
+    /// Get shader parameter
+    pub fn get_shader_iv(&self, shader: u32, pname: u32, params: &mut i32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::GetShaderiv(shader, pname, params);
+        }
+        Ok(())
+    }
+    
+    /// Get shader info log
+    pub fn get_shader_info_log(&self, shader: u32) -> Result<String, String> {
+        self.check_initialized()?;
+        unsafe {
+            let mut len = 0;
+            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
+            let mut buffer = vec![0u8; len as usize];
+            gl::GetShaderInfoLog(shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+            let error = String::from_utf8_lossy(&buffer).to_string();
+            Ok(error)
+        }
+    }
+    
+    /// Get program parameter
+    pub fn get_program_iv(&self, program: u32, pname: u32, params: &mut i32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::GetProgramiv(program, pname, params);
+        }
+        Ok(())
+    }
+    
+    /// Get program info log
+    pub fn get_program_info_log(&self, program: u32) -> Result<String, String> {
+        self.check_initialized()?;
+        unsafe {
+            let mut len = 0;
+            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
+            let mut buffer = vec![0u8; len as usize];
+            gl::GetProgramInfoLog(program, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+            let error = String::from_utf8_lossy(&buffer).to_string();
+            Ok(error)
+        }
+    }
+    
     /// Bind vertex array object
     pub fn bind_vertex_array(&self, vao: u32) -> Result<(), String> {
         self.check_initialized()?;

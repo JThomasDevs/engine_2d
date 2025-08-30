@@ -1,9 +1,7 @@
-#[cfg(feature = "gl")]
 use super::gl_wrapper::GlWrapper;
 use glam::Vec2;
 
 pub struct Renderer {
-    #[cfg(feature = "gl")]
     gl: GlWrapper,
     basic_shader: Option<u32>,
     rect_vao: Option<u32>,
@@ -18,34 +16,23 @@ impl Drop for Renderer {
 
 impl Renderer {
     pub fn cleanup(&mut self) {
-        #[cfg(feature = "gl")]
-        {
-            if let Some(shader) = self.basic_shader.take() {
-                let _ = self.gl.delete_program(shader);
-            }
-            if let Some(vao) = self.rect_vao.take() {
-                let _ = self.gl.delete_vertex_array(vao);
-            }
-            if let Some(vbo) = self.rect_vbo.take() {
-                let _ = self.gl.delete_buffer(vbo);
-            }
+        if let Some(shader) = self.basic_shader.take() {
+            let _ = self.gl.delete_program(shader);
         }
-        #[cfg(not(feature = "gl"))]
-        {
-            // Clear the options without OpenGL calls
-            self.basic_shader.take();
-            self.rect_vao.take();
-            self.rect_vbo.take();
+        if let Some(vao) = self.rect_vao.take() {
+            let _ = self.gl.delete_vertex_array(vao);
+        }
+        if let Some(vbo) = self.rect_vbo.take() {
+            let _ = self.gl.delete_buffer(vbo);
         }
     }
 }
+
 impl Renderer {
     pub fn new() -> Self {
-        #[cfg(feature = "gl")]
         let gl_wrapper = GlWrapper::new();
         
         Self {
-            #[cfg(feature = "gl")]
             gl: gl_wrapper,
             basic_shader: None,
             rect_vao: None,
@@ -55,60 +42,33 @@ impl Renderer {
     
     /// Initialize the renderer (call after OpenGL context is ready)
     pub fn initialize(&mut self) -> Result<(), String> {
-        #[cfg(feature = "gl")]
-        {
-            // The GlWrapper is already initialized in WindowManager
-            // Just create the shaders and geometry
-            
-            let basic_shader = Self::create_basic_shader(&self.gl)?;
-            let (rect_vao, rect_vbo) = Self::create_rect_geometry(&self.gl)?;
-            
-            self.basic_shader = Some(basic_shader);
-            self.rect_vao = Some(rect_vao);
-            self.rect_vbo = Some(rect_vbo);
-        }
-        #[cfg(not(feature = "gl"))]
-        {
-            // Stub initialization for non-GL targets
-            self.basic_shader = Some(0);
-            self.rect_vao = Some(0);
-            self.rect_vbo = Some(0);
-        }
+        // The GlWrapper is already initialized in WindowManager
+        // Just create the shaders and geometry
+        
+        let basic_shader = Self::create_basic_shader(&self.gl)?;
+        let (rect_vao, rect_vbo) = Self::create_rect_geometry(&self.gl)?;
+        
+        self.basic_shader = Some(basic_shader);
+        self.rect_vao = Some(rect_vao);
+        self.rect_vbo = Some(rect_vbo);
         
         Ok(())
     }
     
     pub fn clear(&self, r: f32, g: f32, b: f32, a: f32) -> Result<(), String> {
-        #[cfg(feature = "gl")]
-        {
-            self.gl.set_clear_color(r, g, b, a)?;
-            self.gl.clear_color_buffer()
-        }
-        #[cfg(not(feature = "gl"))]
-        {
-            // Stub clear operation
-            Ok(())
-        }
+        self.gl.set_clear_color(r, g, b, a)?;
+        self.gl.clear_color_buffer()
     }
     
     pub fn draw_rect(&self, position: Vec2, size: Vec2, color: (f32, f32, f32)) -> Result<(), String> {
-        #[cfg(feature = "gl")]
-        {
-            let shader = self.basic_shader.ok_or("Renderer not initialized")?;
-            let vao = self.rect_vao.ok_or("Renderer not initialized")?;
-            
-            self.gl.use_program(shader)?;
-        }
-        #[cfg(not(feature = "gl"))]
-        {
-            // Stub draw operation
-            let _ = (position, size, color);
-        }
+        let shader = self.basic_shader.ok_or("Renderer not initialized")?;
+        let vao = self.rect_vao.ok_or("Renderer not initialized")?;
+        
+        self.gl.use_program(shader)?;
         Ok(())
     }
     
-    #[cfg(feature = "gl")]
-    fn create_basic_shader(gl: &super::gl_wrapper::GlWrapper) -> Result<u32, String> {
+    fn create_basic_shader(gl: &GlWrapper) -> Result<u32, String> {
         let vertex_shader_source = r#"
             #version 330 core
             layout (location = 0) in vec2 position;
@@ -182,8 +142,7 @@ impl Renderer {
         Ok(shader_program)
     }
     
-    #[cfg(feature = "gl")]
-    fn create_rect_geometry(gl: &super::gl_wrapper::GlWrapper) -> Result<(u32, u32), String> {
+    fn create_rect_geometry(gl: &GlWrapper) -> Result<(u32, u32), String> {
         let vertices: [f32; 8] = [
             -0.5, -0.5,  // bottom-left
              0.5, -0.5,  // bottom-right

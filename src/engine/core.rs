@@ -234,8 +234,11 @@ impl Engine {
 }
 
 // This allows Engine::from(config) syntax
-impl From<EngineConfig> for Engine {
-    fn from(config: EngineConfig) -> Self {
-        Self::new_with_config(config).expect("Failed to create engine from config")
+// This allows Engine::try_from(config) syntax for fallible conversion
+impl TryFrom<EngineConfig> for Engine {
+    type Error = Box<dyn std::error::Error>;
+
+    fn try_from(config: EngineConfig) -> Result<Self, Self::Error> {
+        Self::new_with_config(config)
     }
 }
