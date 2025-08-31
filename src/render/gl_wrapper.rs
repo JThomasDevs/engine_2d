@@ -1,15 +1,24 @@
+#[cfg(feature = "gl")]
 use gl;
 use std::ffi::CString;
+#[cfg(feature = "glfw")]
 use glfw::{Glfw, Window as GlfwWindow};
 
 /// Safe wrapper around OpenGL functionality
+#[cfg(feature = "glfw")]
 pub struct GlWrapper {
     initialized: bool,
     glfw: Option<Glfw>,
     window: Option<GlfwWindow>,
 }
 
+#[cfg(not(feature = "glfw"))]
+pub struct GlWrapper {
+    initialized: bool,
+}
+
 impl GlWrapper {
+    #[cfg(feature = "glfw")]
     pub fn new() -> Self {
         Self {
             initialized: false,
@@ -17,8 +26,16 @@ impl GlWrapper {
             window: None,
         }
     }
+
+    #[cfg(not(feature = "glfw"))]
+    pub fn new() -> Self {
+        Self {
+            initialized: false,
+        }
+    }
     
     /// Initialize OpenGL context with GLFW window
+    #[cfg(all(feature = "glfw", feature = "gl"))]
     pub fn initialize(&mut self, window: &mut glfw::Window) -> Result<(), String> {
         // Load OpenGL function pointers using the provided window
         gl::load_with(|s| window.get_proc_address(s).map_or(std::ptr::null(), |f| f as *const _));
@@ -26,6 +43,13 @@ impl GlWrapper {
         // Mark as initialized
         self.initialized = true;
         
+        Ok(())
+    }
+
+    #[cfg(not(all(feature = "glfw", feature = "gl")))]
+    pub fn initialize(&mut self) -> Result<(), String> {
+        // No-op for headless mode
+        self.initialized = true;
         Ok(())
     }
     
@@ -38,6 +62,7 @@ impl GlWrapper {
     }
     
     /// Set the viewport dimensions
+    #[cfg(feature = "gl")]
     pub fn set_viewport(&self, x: i32, y: i32, width: i32, height: i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -45,8 +70,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_viewport(&self, _x: i32, _y: i32, _width: i32, _height: i32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Set the clear color
+    #[cfg(feature = "gl")]
     pub fn set_clear_color(&self, r: f32, g: f32, b: f32, a: f32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -54,8 +86,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_clear_color(&self, _r: f32, _g: f32, _b: f32, _a: f32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Clear the color buffer
+    #[cfg(feature = "gl")]
     pub fn clear_color_buffer(&self) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -63,8 +102,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn clear_color_buffer(&self) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Enable blending
+    #[cfg(feature = "gl")]
     pub fn enable_blending(&self) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -72,8 +118,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn enable_blending(&self) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Set blend function
+    #[cfg(feature = "gl")]
     pub fn set_blend_func(&self, src: u32, dst: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -81,8 +134,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_blend_func(&self, _src: u32, _dst: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Use a shader program
+    #[cfg(feature = "gl")]
     pub fn use_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -90,8 +150,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn use_program(&self, _program: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Set a 3D float uniform
+    #[cfg(feature = "gl")]
     pub fn set_uniform_3f(&self, location: i32, x: f32, y: f32, z: f32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -99,8 +166,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_uniform_3f(&self, _location: i32, _x: f32, _y: f32, _z: f32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Set a 2D float uniform
+    #[cfg(feature = "gl")]
     pub fn set_uniform_2f(&self, location: i32, x: f32, y: f32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -108,8 +182,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_uniform_2f(&self, _location: i32, _x: f32, _y: f32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Get uniform location
+    #[cfg(feature = "gl")]
     pub fn get_uniform_location(&self, program: u32, name: &str) -> Result<i32, String> {
         self.check_initialized()?;
         unsafe {
@@ -118,8 +199,15 @@ impl GlWrapper {
             Ok(gl::GetUniformLocation(program, c_str.as_ptr() as *const i8))
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn get_uniform_location(&self, _program: u32, _name: &str) -> Result<i32, String> {
+        // No-op for headless mode
+        Ok(0) // Return a default value or handle as appropriate
+    }
     
     /// Get shader parameter
+    #[cfg(feature = "glfw")]
     pub fn get_shader_iv(&self, shader: u32, pname: u32, params: &mut i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -127,8 +215,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "glfw"))]
+    pub fn get_shader_iv(&self, _shader: u32, _pname: u32, _params: &mut i32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Get shader info log
+    #[cfg(feature = "glfw")]
     pub fn get_shader_info_log(&self, shader: u32) -> Result<String, String> {
         self.check_initialized()?;
         unsafe {
@@ -140,8 +235,15 @@ impl GlWrapper {
             Ok(error)
         }
     }
+
+    #[cfg(not(feature = "glfw"))]
+    pub fn get_shader_info_log(&self, _shader: u32) -> Result<String, String> {
+        // No-op for headless mode
+        Ok(String::new())
+    }
     
     /// Get program parameter
+    #[cfg(feature = "gl")]
     pub fn get_program_iv(&self, program: u32, pname: u32, params: &mut i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -149,8 +251,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn get_program_iv(&self, _program: u32, _pname: u32, _params: &mut i32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Get program info log
+    #[cfg(feature = "gl")]
     pub fn get_program_info_log(&self, program: u32) -> Result<String, String> {
         self.check_initialized()?;
         unsafe {
@@ -162,8 +271,15 @@ impl GlWrapper {
             Ok(error)
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn get_program_info_log(&self, _program: u32) -> Result<String, String> {
+        // No-op for headless mode
+        Ok(String::new())
+    }
     
     /// Bind vertex array object
+    #[cfg(feature = "gl")]
     pub fn bind_vertex_array(&self, vao: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -171,8 +287,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn bind_vertex_array(&self, _vao: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Draw arrays
+    #[cfg(feature = "gl")]
     pub fn draw_arrays(&self, mode: u32, first: i32, count: i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -180,8 +303,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn draw_arrays(&self, _mode: u32, _first: i32, _count: i32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Create shader
+    #[cfg(feature = "gl")]
     pub fn create_shader(&self, shader_type: u32) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -192,8 +322,15 @@ impl GlWrapper {
             Ok(shader)
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn create_shader(&self, _shader_type: u32) -> Result<u32, String> {
+        // No-op for headless mode
+        Ok(0) // Return a default value or handle as appropriate
+    }
     
     /// Set shader source
+    #[cfg(feature = "gl")]
     pub fn set_shader_source(&self, shader: u32, source: &str) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -202,8 +339,15 @@ impl GlWrapper {
             Ok(())
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_shader_source(&self, _shader: u32, _source: &str) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Compile shader
+    #[cfg(feature = "gl")]
     pub fn compile_shader(&self, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -224,8 +368,15 @@ impl GlWrapper {
             Ok(())
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn compile_shader(&self, _shader: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Create program
+    #[cfg(feature = "gl")]
     pub fn create_program(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -236,8 +387,15 @@ impl GlWrapper {
             Ok(program)
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn create_program(&self) -> Result<u32, String> {
+        // No-op for headless mode
+        Ok(0) // Return a default value or handle as appropriate
+    }
     
     /// Attach shader to program
+    #[cfg(feature = "gl")]
     pub fn attach_shader(&self, program: u32, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -245,8 +403,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn attach_shader(&self, _program: u32, _shader: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Link program
+    #[cfg(feature = "gl")]
     pub fn link_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -267,8 +432,15 @@ impl GlWrapper {
             Ok(())
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn link_program(&self, _program: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Delete shader
+    #[cfg(feature = "gl")]
     pub fn delete_shader(&self, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -276,8 +448,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn delete_shader(&self, _shader: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Generate vertex array object
+    #[cfg(feature = "gl")]
     pub fn gen_vertex_array(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -292,8 +471,15 @@ impl GlWrapper {
             Ok(vao)
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn gen_vertex_array(&self) -> Result<u32, String> {
+        // No-op for headless mode
+        Ok(0) // Return a default value or handle as appropriate
+    }
     
     /// Generate buffer
+    #[cfg(feature = "gl")]
     pub fn gen_buffer(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -308,8 +494,15 @@ impl GlWrapper {
             Ok(buffer)
         }
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn gen_buffer(&self) -> Result<u32, String> {
+        // No-op for headless mode
+        Ok(0) // Return a default value or handle as appropriate
+    }
     
     /// Bind buffer
+    #[cfg(feature = "gl")]
     pub fn bind_buffer(&self, target: u32, buffer: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -317,8 +510,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn bind_buffer(&self, _target: u32, _buffer: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Set buffer data
+    #[cfg(feature = "gl")]
     pub fn set_buffer_data(&self, target: u32, data: &[f32], usage: u32) -> Result<(), String> {
         self.check_initialized()?;
         
@@ -337,8 +537,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_buffer_data(&self, _target: u32, _data: &[f32], _usage: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Set vertex attribute pointer
+    #[cfg(feature = "gl")]
     pub fn set_vertex_attrib_pointer(&self, index: u32, size: i32, data_type: u32, normalized: bool, stride: i32, offset: usize) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -346,8 +553,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_vertex_attrib_pointer(&self, _index: u32, _size: i32, _data_type: u32, _normalized: bool, _stride: i32, _offset: usize) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Enable vertex attribute array
+    #[cfg(feature = "gl")]
     pub fn enable_vertex_attrib_array(&self, index: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -355,8 +569,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn enable_vertex_attrib_array(&self, _index: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Delete program
+    #[cfg(feature = "gl")]
     pub fn delete_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -364,8 +585,15 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn delete_program(&self, _program: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Delete vertex array object
+    #[cfg(feature = "gl")]
     pub fn delete_vertex_array(&self, vao: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -373,13 +601,26 @@ impl GlWrapper {
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn delete_vertex_array(&self, _vao: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
     
     /// Delete buffer
+    #[cfg(feature = "gl")]
     pub fn delete_buffer(&self, buffer: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
             gl::DeleteBuffers(1, &buffer);
         }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn delete_buffer(&self, _buffer: u32) -> Result<(), String> {
+        // No-op for headless mode
         Ok(())
     }
 }

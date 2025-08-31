@@ -3,7 +3,9 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
-use glfw::{WindowEvent, Action, Key as GlfwKey};
+#[cfg(feature = "glfw")]
+use glfw::{Action, Key as GlfwKey};
+use super::window::WindowEvent;
 use crate::input::KeyboardInput;
 use crate::render::renderer::Renderer;
 use super::window::WindowManager;
@@ -174,8 +176,9 @@ impl Engine {
             let mut should_close = false;
             self.window_manager.process_events(|event| {
                 match event {
-                    WindowEvent::Key(GlfwKey::Escape, _, Action::Press, _) |
-                    WindowEvent::Key(GlfwKey::Q, _, Action::Press, _) => {
+                    #[cfg(feature = "glfw")]
+                    WindowEvent::Glfw(glfw::WindowEvent::Key(GlfwKey::Escape, _, Action::Press, _)) |
+                    WindowEvent::Glfw(glfw::WindowEvent::Key(GlfwKey::Q, _, Action::Press, _)) => {
                         should_close = true;
                         false
                     }
@@ -233,7 +236,6 @@ impl Engine {
     }
 }
 
-// This allows Engine::from(config) syntax
 // This allows Engine::try_from(config) syntax for fallible conversion
 impl TryFrom<EngineConfig> for Engine {
     type Error = Box<dyn std::error::Error>;
