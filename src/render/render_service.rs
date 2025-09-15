@@ -17,6 +17,11 @@ pub struct RenderService {
     rect_vao: Option<u32>,
     rect_vbo: Option<u32>,
     initialized: bool,
+    
+    // Cached uniform locations
+    uniform_rect_position: Option<i32>,
+    uniform_rect_size: Option<i32>,
+    uniform_color: Option<i32>,
 }
 
 impl RenderService {
@@ -31,6 +36,9 @@ impl RenderService {
             rect_vao: None,
             rect_vbo: None,
             initialized: false,
+            uniform_rect_position: None,
+            uniform_rect_size: None,
+            uniform_color: None,
         }
     }
     
@@ -45,6 +53,9 @@ impl RenderService {
             rect_vao: None,
             rect_vbo: None,
             initialized: false,
+            uniform_rect_position: None,
+            uniform_rect_size: None,
+            uniform_color: None,
         }
     }
     
@@ -59,6 +70,9 @@ impl RenderService {
             rect_vao: None,
             rect_vbo: None,
             initialized: false,
+            uniform_rect_position: None,
+            uniform_rect_size: None,
+            uniform_color: None,
         }
     }
     
@@ -77,6 +91,9 @@ impl RenderService {
         let vertex_shader = self.create_shader(include_str!("shaders/basic.vert"))?;
         let fragment_shader = self.create_shader(include_str!("shaders/basic.frag"))?;
         let shader_program = self.create_shader_program(vertex_shader, fragment_shader)?;
+        
+        // Cache uniform locations
+        self.cache_uniform_locations(shader_program)?;
         
         // Create rectangle geometry
         let (vao, vbo) = self.create_rectangle_geometry()?;
@@ -141,6 +158,65 @@ impl RenderService {
         Ok(program)
     }
     
+    /// Resolve and cache uniform locations for the shader program
+    fn cache_uniform_locations(&mut self, program: u32) -> SystemResult<()> {
+        // Get uniform location for rect_position
+        self.gl_service.send_command(GlCommand::GetUniformLocation { 
+            program, 
+            name: "rect_position".to_string() 
+        })?;
+        let result = self.gl_service.receive_result()?;
+        match result {
+            GlResult::UniformLocation { location, .. } => {
+                if location != -1 {
+                    self.uniform_rect_position = Some(location);
+                } else {
+                    return Err(SystemError::ProcessingFailed("Uniform 'rect_position' not found in shader".to_string()));
+                }
+            }
+            GlResult::Error { message } => return Err(SystemError::ProcessingFailed(message)),
+            _ => return Err(SystemError::ProcessingFailed("Unexpected result when getting uniform location".to_string())),
+        }
+        
+        // Get uniform location for rect_size
+        self.gl_service.send_command(GlCommand::GetUniformLocation { 
+            program, 
+            name: "rect_size".to_string() 
+        })?;
+        let result = self.gl_service.receive_result()?;
+        match result {
+            GlResult::UniformLocation { location, .. } => {
+                if location != -1 {
+                    self.uniform_rect_size = Some(location);
+                } else {
+                    return Err(SystemError::ProcessingFailed("Uniform 'rect_size' not found in shader".to_string()));
+                }
+            }
+            GlResult::Error { message } => return Err(SystemError::ProcessingFailed(message)),
+            _ => return Err(SystemError::ProcessingFailed("Unexpected result when getting uniform location".to_string())),
+        }
+        
+        // Get uniform location for color
+        self.gl_service.send_command(GlCommand::GetUniformLocation { 
+            program, 
+            name: "color".to_string() 
+        })?;
+        let result = self.gl_service.receive_result()?;
+        match result {
+            GlResult::UniformLocation { location, .. } => {
+                if location != -1 {
+                    self.uniform_color = Some(location);
+                } else {
+                    return Err(SystemError::ProcessingFailed("Uniform 'color' not found in shader".to_string()));
+                }
+            }
+            GlResult::Error { message } => return Err(SystemError::ProcessingFailed(message)),
+            _ => return Err(SystemError::ProcessingFailed("Unexpected result when getting uniform location".to_string())),
+        }
+        
+        Ok(())
+    }
+    
     /// Create rectangle geometry
     fn create_rectangle_geometry(&self) -> SystemResult<(u32, u32)> {
         // Generate VAO
@@ -203,21 +279,33 @@ impl RenderService {
                     // Use shader
                     self.gl_service.send_command(GlCommand::UseProgram { program: shader })?;
                     
-                    // Set uniforms
-                    self.gl_service.send_command(GlCommand::SetUniform2f { 
-                        location: 0, // We'll need to get actual location
-                        x, y 
-                    })?;
+                    // Set uniforms using cached locations
+                    if let Some(location) = self.uniform_rect_position {
+                        self.gl_service.send_command(GlCommand::SetUniform2f { 
+                            location,
+                            x, y 
+                        })?;
+                    } else {
+                        return Err(SystemError::ProcessingFailed("Uniform 'rect_position' location not cached".to_string()));
+                    }
                     
-                    self.gl_service.send_command(GlCommand::SetUniform2f { 
-                        location: 1, // We'll need to get actual location
-                        x: width, y: height 
-                    })?;
+                    if let Some(location) = self.uniform_rect_size {
+                        self.gl_service.send_command(GlCommand::SetUniform2f { 
+                            location,
+                            x: width, y: height 
+                        })?;
+                    } else {
+                        return Err(SystemError::ProcessingFailed("Uniform 'rect_size' location not cached".to_string()));
+                    }
                     
-                    self.gl_service.send_command(GlCommand::SetUniform3f { 
-                        location: 2, // We'll need to get actual location
-                        x: color.0, y: color.1, z: color.2 
-                    })?;
+                    if let Some(location) = self.uniform_color {
+                        self.gl_service.send_command(GlCommand::SetUniform3f { 
+                            location,
+                            x: color.0, y: color.1, z: color.2 
+                        })?;
+                    } else {
+                        return Err(SystemError::ProcessingFailed("Uniform 'color' location not cached".to_string()));
+                    }
                     
                     // Draw
                     self.gl_service.send_command(GlCommand::BindVertexArray { vao })?;

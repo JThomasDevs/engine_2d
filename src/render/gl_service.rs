@@ -121,6 +121,16 @@ impl GlService {
             let gl_wrapper = GlWrapper::new();
             let mut initialized = false;
             
+            // Helper function to check initialization and execute command
+            fn require_initialized<F>(initialized: bool, f: F) -> GlResult 
+            where F: FnOnce() -> GlResult {
+                if !initialized {
+                    GlResult::NotInitialized
+                } else {
+                    f()
+                }
+            }
+            
             while running_clone.load(Ordering::Relaxed) {
                 // Process commands
                 while let Ok(command) = command_receiver.try_recv() {
@@ -137,300 +147,246 @@ impl GlService {
                         }
                         
                         GlCommand::SetViewport { x, y, width, height } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_viewport(x, y, width, height) {
                                     Ok(_) => GlResult::ViewportSet,
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::SetClearColor { r, g, b, a } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_clear_color(r, g, b, a) {
                                     Ok(_) => GlResult::ClearColorSet,
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::ClearColorBuffer => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.clear_color_buffer() {
                                     Ok(_) => GlResult::ColorBufferCleared,
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::EnableBlending => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.enable_blending() {
                                     Ok(_) => GlResult::BlendingEnabled,
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::SetBlendFunc { src, dst } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_blend_func(src, dst) {
                                     Ok(_) => GlResult::BlendFuncSet,
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::UseProgram { program } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.use_program(program) {
                                     Ok(_) => GlResult::ProgramUsed { program },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::SetUniform2f { location, x, y } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_uniform_2f(location, x, y) {
                                     Ok(_) => GlResult::Uniform2fSet { location, x, y },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::SetUniform3f { location, x, y, z } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_uniform_3f(location, x, y, z) {
                                     Ok(_) => GlResult::Uniform3fSet { location, x, y, z },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::GetUniformLocation { program, name } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.get_uniform_location(program, &name) {
                                     Ok(location) => GlResult::UniformLocation { program, name, location },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::BindVertexArray { vao } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.bind_vertex_array(vao) {
                                     Ok(_) => GlResult::VertexArrayBound { vao },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::DrawArrays { mode, first, count } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.draw_arrays(mode, first, count) {
                                     Ok(_) => GlResult::ArraysDrawn { mode, first, count },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::CreateShader { shader_type } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.create_shader(shader_type) {
                                     Ok(shader) => GlResult::ShaderCreated { shader },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::SetShaderSource { shader, source } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_shader_source(shader, &source) {
                                     Ok(_) => GlResult::ShaderSourceSet { shader },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::CompileShader { shader } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.compile_shader(shader) {
                                     Ok(_) => GlResult::ShaderCompiled { shader },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::CreateProgram => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.create_program() {
                                     Ok(program) => GlResult::ProgramCreated { program },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::AttachShader { program, shader } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.attach_shader(program, shader) {
                                     Ok(_) => GlResult::ShaderAttached { program, shader },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::LinkProgram { program } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.link_program(program) {
                                     Ok(_) => GlResult::ProgramLinked { program },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::DeleteShader { shader } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.delete_shader(shader) {
                                     Ok(_) => GlResult::ShaderDeleted { shader },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::DeleteProgram { program } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.delete_program(program) {
                                     Ok(_) => GlResult::ProgramDeleted { program },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::GenVertexArray => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.gen_vertex_array() {
                                     Ok(vao) => GlResult::VertexArrayGenerated { vao },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::GenBuffer => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.gen_buffer() {
                                     Ok(buffer) => GlResult::BufferGenerated { buffer },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::BindBuffer { target, buffer } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.bind_buffer(target, buffer) {
                                     Ok(_) => GlResult::BufferBound { target, buffer },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::SetBufferData { target, data, usage } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_buffer_data(target, &data, usage) {
                                     Ok(_) => GlResult::BufferDataSet { target, data_len: data.len() },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::SetVertexAttribPointer { index, size, data_type, normalized, stride, offset } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.set_vertex_attrib_pointer(index, size, data_type, normalized, stride, offset) {
                                     Ok(_) => GlResult::VertexAttribPointerSet { index },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::EnableVertexAttribArray { index } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.enable_vertex_attrib_array(index) {
                                     Ok(_) => GlResult::VertexAttribArrayEnabled { index },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::DeleteVertexArray { vao } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.delete_vertex_array(vao) {
                                     Ok(_) => GlResult::VertexArrayDeleted { vao },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::DeleteBuffer { buffer } => {
-                            if !initialized {
-                                GlResult::NotInitialized
-                            } else {
+                            require_initialized(initialized, || {
                                 match gl_wrapper.delete_buffer(buffer) {
                                     Ok(_) => GlResult::BufferDeleted { buffer },
                                     Err(e) => GlResult::Error { message: e },
                                 }
-                            }
+                            })
                         }
                         
                         GlCommand::Shutdown => {
