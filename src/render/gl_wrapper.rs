@@ -8,7 +8,9 @@ use glfw::{Glfw, Window as GlfwWindow};
 #[cfg(feature = "glfw")]
 pub struct GlWrapper {
     initialized: bool,
+    #[allow(dead_code)]
     glfw: Option<Glfw>,
+    #[allow(dead_code)]
     window: Option<GlfwWindow>,
 }
 

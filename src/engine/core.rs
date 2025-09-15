@@ -1,25 +1,13 @@
 use std::time::{Duration, Instant};
-use std::sync::mpsc::{channel, Sender, Receiver};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::thread;
-#[cfg(feature = "glfw")]
-use glfw::{Action, Key as GlfwKey};
-use super::window::WindowEvent;
-use crate::input::KeyboardInput;
-use crate::render::renderer::Renderer;
 use super::window::WindowManager;
 use super::config::EngineConfig;
-
-#[derive(Debug)]
-enum GameCommand {
-    Quit,
-}
-
-#[derive(Debug)]
-enum RenderCommand {
-    Render,
-}
+use crate::events::event_system::EventSystem;
+use crate::events::event_types::RenderEvent;
+use crate::render::renderer::Renderer;
+use crate::render::gl_wrapper::GlWrapper;
+use glam::Vec2;
+#[cfg(feature = "glfw")]
+use glfw::{Action, Key};
 
 pub struct Engine {
     // Engine state
@@ -27,10 +15,14 @@ pub struct Engine {
     delta_time: Duration,
     last_frame_time: Instant,
     
+    // OpenGL context is managed by the renderer
+    
     // Window and input systems
     window_manager: WindowManager,
-    keyboard_input: KeyboardInput,
     config: EngineConfig,
+    
+    // Event system
+    event_system: EventSystem,
     
     // Rendering system
     renderer: Renderer,
@@ -42,18 +34,28 @@ impl Engine {
     }
     
     pub fn new_with_config(config: EngineConfig) -> Result<Self, Box<dyn std::error::Error>> {
-        let window_manager = WindowManager::new(&config)?;
+        // Create GlWrapper first
+        let mut gl_wrapper = GlWrapper::new();
         
-        let renderer = Renderer::new();
-        // TODO: Pass the GlWrapper from window_manager to renderer
+        // Create window manager with GlWrapper
+        let window_manager = WindowManager::new(&config, &mut gl_wrapper)?;
+        
+        // Create event system
+        let event_system = EventSystem::new();
+        
+        // Create renderer with GlWrapper
+        let mut renderer = Renderer::new_with_gl(gl_wrapper);
+        if let Err(e) = renderer.initialize() {
+            return Err(format!("Failed to initialize renderer: {}", e).into());
+        }
         
         Ok(Self {
             is_running: false,
             delta_time: Duration::ZERO,
             last_frame_time: Instant::now(),
             window_manager,
-            keyboard_input: KeyboardInput::new(),
             config,
+            event_system,
             renderer,
         })
     }
@@ -67,7 +69,7 @@ impl Engine {
         &self.config
     }
     
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         println!("Starting engine...");
         println!("Window: {} ({}x{})", 
                  self.window_manager.get_title(),
@@ -75,159 +77,80 @@ impl Engine {
                  self.window_manager.get_size().1);
         println!("Press 'Q' or 'ESC' to quit");
         
-        // Create shared shutdown flag
-        let shutdown = Arc::new(AtomicBool::new(false));
-        let shutdown_clone = Arc::clone(&shutdown);
+        // Renderer is already initialized in the constructor
         
-        // Create channels for communication between threads
-        let (game_sender, game_receiver): (Sender<GameCommand>, Receiver<GameCommand>) = channel();
-        let (render_sender, render_receiver): (Sender<RenderCommand>, Receiver<RenderCommand>) = channel();
-        let (shutdown_sender, shutdown_receiver): (Sender<()>, Receiver<()>) = channel();
-        
-        // Start game loop thread
-        let config = self.config.clone();
-        let game_thread = thread::spawn(move || {
-            // Clone config values to avoid concurrent access
-            let target_fps = config.target_fps;
-            let show_fps = config.show_fps;
-
-            let mut delta_time = Duration::ZERO;
-            let mut last_frame_time = Instant::now();
-
-            // Game loop with proper shutdown handling
-            loop {
-                // Check for shutdown signal from channel (non-blocking)
-                if shutdown_receiver.try_recv().is_ok() {
-                    println!("Game thread received shutdown signal");
-                    break;
-                }
-                
-                // Check atomic shutdown flag (for backward compatibility)
-                if shutdown_clone.load(Ordering::Relaxed) {
-                    println!("Game thread detected shutdown flag");
-                    break;
-                }
-                
-                // Handle game commands (non-blocking)
-                while let Ok(cmd) = game_receiver.try_recv() {
-                    match cmd {
-                        GameCommand::Quit => {
-                            println!("Game thread received quit command");
-                            return; // Exit immediately
-                        }
-                    }
-                }
-                // Update timing
-                let current_time = Instant::now();
-                delta_time = current_time.duration_since(last_frame_time);
-                last_frame_time = current_time;
-
-                // Update game logic
-                // TODO: Call existing update method
-
-                // Send render command
-                if render_sender.send(RenderCommand::Render).is_err() {
-                    break; // Main thread closed
-                }
-
-                // Frame rate limiting and FPS calculation
-                if let Some(target_fps) = target_fps {
-                    let frame_time = Duration::from_secs_f32(1.0 / target_fps as f32);
-                    if delta_time < frame_time {
-                        thread::sleep(frame_time - delta_time);
-                        // Use target FPS for display when limiting
-                        if show_fps {
-                            println!("Engine running - FPS: {}", target_fps);
-                        }
-                    } else {
-                        // Use actual FPS when not limiting
-                        if delta_time.as_millis() > 0 && show_fps {
-                            let fps = 1000 / delta_time.as_millis();
-                            println!("Engine running - FPS: {}", fps);
-                        } else if delta_time.as_millis() == 0 && show_fps {
-                            println!("Engine running - FPS: >1000");
-                        }
-                    }
-                } else {
-                    // No frame rate limiting, use actual FPS
-                    if delta_time.as_millis() > 0 && show_fps {
-                        let fps = 1000 / delta_time.as_millis();
-                        println!("Engine running - FPS: {}", fps);
-                    } else if delta_time.as_millis() == 0 && show_fps {
-                        println!("Engine running - FPS: >1000");
-                    }
-                }
-
-                // Small delay to prevent busy waiting
-                thread::sleep(Duration::from_millis(1));
-            }
-            
-            // Cleanup before exiting
-            println!("Game thread cleaning up...");
-            // TODO: Add any game-specific cleanup here (e.g., save game state, close files, etc.)
-        });
-        
-        // Main thread handles GLFW events and rendering
+        // Main game loop
         while !self.window_manager.should_close() {
-            // Poll GLFW events (this can block, but that's OK in main thread)
+            // Update timing
+            let current_time = Instant::now();
+            self.delta_time = current_time.duration_since(self.last_frame_time);
+            self.last_frame_time = current_time;
+            
+            // Process window events
             self.window_manager.poll_events();
             
-            // Process events
-            let mut should_close = false;
+            // Handle keyboard input for quit
             self.window_manager.process_events(|event| {
                 match event {
                     #[cfg(feature = "glfw")]
-                    WindowEvent::Glfw(glfw::WindowEvent::Key(GlfwKey::Escape, _, Action::Press, _)) |
-                    WindowEvent::Glfw(glfw::WindowEvent::Key(GlfwKey::Q, _, Action::Press, _)) => {
-                        should_close = true;
-                        false
+                    super::window::WindowEvent::Glfw(glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _)) |
+                    super::window::WindowEvent::Glfw(glfw::WindowEvent::Key(Key::Q, _, Action::Press, _)) => {
+                        false // Return false to close window
                     }
-                    _ => true,
+                    _ => true, // Continue processing other events
                 }
             });
             
-            if should_close {
-                shutdown.store(true, Ordering::Relaxed);
-                // Send shutdown signal through channel for immediate response
-                let _ = shutdown_sender.send(());
-                self.window_manager.request_close();
-                break; // Exit immediately after sending quit command
+            // Send render event to draw red rectangle
+            let render_event = RenderEvent::DrawRectangle {
+                x: 100.0,
+                y: 100.0,
+                width: 200.0,
+                height: 150.0,
+                color: (1.0, 0.0, 0.0), // Red
+                timestamp: Instant::now(),
+            };
+            
+            if let Err(e) = self.event_system.send_render_event(render_event) {
+                eprintln!("Failed to send render event: {}", e);
             }
             
-            // Handle render commands from game thread
-            if let Ok(cmd) = render_receiver.try_recv() {
-                match cmd {
-                    RenderCommand::Render => {
-                        // TODO: Add actual rendering calls here when OpenGL context is ready
-                        self.window_manager.swap_buffers();
+            // Render directly using the renderer
+            if let Err(e) = self.renderer.clear(0.0, 0.0, 0.0, 1.0) {
+                eprintln!("Renderer clear error: {}", e);
+            }
+            
+            // Draw red rectangle in the center of the screen
+            // Convert pixel coordinates to normalized coordinates (-1 to 1)
+            let _window_size = self.window_manager.get_size();
+            let center_x = 0.0; // Center horizontally
+            let center_y = 0.0; // Center vertically
+            let rect_width = 0.4;  // 40% of screen width
+            let rect_height = 0.3; // 30% of screen height
+            
+            if let Err(e) = self.renderer.draw_rect(
+                Vec2::new(center_x, center_y), 
+                Vec2::new(rect_width, rect_height), 
+                (1.0, 0.0, 0.0)
+            ) {
+                eprintln!("Renderer draw error: {}", e);
+            } else {
+                // Only print this once to avoid spam
+                static mut PRINTED: bool = false;
+                unsafe {
+                    if !PRINTED {
+                        println!("Successfully drew red rectangle at center with size (0.4, 0.3)");
+                        PRINTED = true;
                     }
                 }
             }
+            
+            // Swap buffers
+            self.window_manager.swap_buffers();
         }
         
-        // Signal shutdown to game thread
-        shutdown.store(true, Ordering::Relaxed);
-        let _ = shutdown_sender.send(());
-        let _ = game_sender.send(GameCommand::Quit);
-        
-        // Wait for game thread to finish with proper join
-        println!("Waiting for game thread to finish...");
-        match game_thread.join() {
-            Ok(_) => {
-                println!("Game thread finished successfully");
-            }
-            Err(e) => {
-                eprintln!("Game thread panicked: {:?}", e);
-                // Log the panic details for debugging
-                if let Some(s) = e.downcast_ref::<String>() {
-                    eprintln!("Panic message: {}", s);
-                } else if let Some(s) = e.downcast_ref::<&str>() {
-                    eprintln!("Panic message: {}", s);
-                }
-            }
-        }
-        
-        println!("Engine stopped.");
+        println!("Engine shutting down...");
+        Ok(())
     }
     
     pub fn quit(&mut self) {

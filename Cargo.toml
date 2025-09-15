@@ -19,6 +19,9 @@ glam = "0.25"
 # Cross-platform image loading
 image = "0.24"
 
+# Serialization support
+serde = { version = "1.0", features = ["derive"] }
+
 # Cross-platform audio (optional)
 # rodio = "0.17"
 

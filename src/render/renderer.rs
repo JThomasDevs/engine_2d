@@ -6,8 +6,11 @@ use glam::Vec2;
 /// Sentinel values for headless mode that are guaranteed to be distinct from valid OpenGL handles.
 /// OpenGL never returns 0 for valid handles, so we use these constants to distinguish headless stubs
 /// from actual failures. Real OpenGL code will never emit these values.
+#[cfg(not(feature = "glfw"))]
 const DUMMY_SHADER_HANDLE: u32 = 0xDEADBEEF;
+#[cfg(not(feature = "glfw"))]
 const DUMMY_VAO_HANDLE: u32 = 0xCAFEBABE;
+#[cfg(not(feature = "glfw"))]
 const DUMMY_VBO_HANDLE: u32 = 0xBABECAFE;
 
 pub struct Renderer {
@@ -49,18 +52,33 @@ impl Renderer {
         }
     }
     
+    /// Create a renderer with an existing GlWrapper (for use with WindowManager)
+    pub fn new_with_gl(gl_wrapper: GlWrapper) -> Self {
+        Self {
+            gl: gl_wrapper,
+            basic_shader: None,
+            rect_vao: None,
+            rect_vbo: None,
+        }
+    }
+    
     /// Initialize the renderer (call after OpenGL context is ready)
     pub fn initialize(&mut self) -> Result<(), String> {
         // The GlWrapper is already initialized in WindowManager
         // Just create the shaders and geometry
         
+        println!("Initializing renderer...");
         let basic_shader = Self::create_basic_shader(&self.gl)?;
+        println!("Created basic shader: {}", basic_shader);
+        
         let (rect_vao, rect_vbo) = Self::create_rect_geometry(&self.gl)?;
+        println!("Created rectangle geometry - VAO: {}, VBO: {}", rect_vao, rect_vbo);
         
         self.basic_shader = Some(basic_shader);
         self.rect_vao = Some(rect_vao);
         self.rect_vbo = Some(rect_vbo);
         
+        println!("Renderer initialized successfully!");
         Ok(())
     }
     

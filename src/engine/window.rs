@@ -44,7 +44,7 @@
 // - Plan for WebAssembly support in future
 
 #[cfg(feature = "glfw")]
-use glfw::{Glfw, Context, WindowMode, WindowHint, Action, Key as GlfwKey};
+use glfw::{Glfw, Context, WindowMode, WindowHint};
 use super::config::EngineConfig;
 use crate::render::gl_wrapper::GlWrapper;
 
@@ -63,7 +63,6 @@ pub struct WindowManager {
     pub window: glfw::PWindow,
     pub events: glfw::GlfwReceiver<(f64, glfw::WindowEvent)>,
     pub should_close: bool,
-    pub gl_wrapper: GlWrapper,
     pub title: String,
 }
 
@@ -75,7 +74,7 @@ pub struct WindowManager {
 
 impl WindowManager {
     #[cfg(feature = "glfw")]
-    pub fn new(config: &EngineConfig) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(config: &EngineConfig, gl_wrapper: &mut GlWrapper) -> Result<Self, Box<dyn std::error::Error>> {
         println!("Creating window: {}x{}", config.window_width, config.window_height);
         println!("Window title: {}", config.window_title);
         
@@ -108,7 +107,7 @@ impl WindowManager {
         window.set_framebuffer_size_polling(true);
         window.set_close_polling(true);
         
-        let mut gl_wrapper = GlWrapper::new();
+        // Initialize the GlWrapper passed from Engine
         if let Err(e) = gl_wrapper.initialize(&mut window) {
             return Err(format!("Failed to initialize OpenGL context: {}", e).into());
         }
@@ -119,13 +118,12 @@ impl WindowManager {
             window,
             events,
             should_close: false,
-            gl_wrapper,
             title: config.window_title.clone(),
         })
     }
 
     #[cfg(not(feature = "glfw"))]
-    pub fn new(config: &EngineConfig) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(config: &EngineConfig, _gl_wrapper: &mut GlWrapper) -> Result<Self, Box<dyn std::error::Error>> {
         println!("Creating headless window manager for: {}", config.window_title);
         
         Ok(Self {
@@ -208,11 +206,8 @@ impl WindowManager {
                 }
                 glfw::WindowEvent::FramebufferSize(width, height) => {
                     // Handle window resize - update viewport
-                    if let Err(e) = self.gl_wrapper.set_viewport(0, 0, width, height) {
-                        println!("Warning: Failed to update viewport: {}", e);
-                    } else {
-                        println!("Window resized to {}x{} - viewport updated", width, height);
-                    }
+                    // TODO: Send viewport update event to render system
+                    println!("Window resized to {}x{}", width, height);
                 }
                 glfw::WindowEvent::Size(width, height) => {
                     // Handle window size change
@@ -234,4 +229,5 @@ impl WindowManager {
     {
         // No-op for headless mode
     }
+    
 }
