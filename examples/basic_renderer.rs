@@ -76,6 +76,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nPress 'Q' or 'ESC' to quit");
     
     // Run the engine
-    engine.run();
+    engine.run()?;
     Ok(())
 }

@@ -4,6 +4,7 @@ use crate::events::system_trait::{GameSystem, SystemError, SystemResult, SystemS
 use std::time::Duration;
 use std::sync::mpsc::{self, Sender, Receiver};
 use std::sync::{Arc, Mutex};
+use log::error;
 
 /// High-level rendering service that processes render events
 pub struct RenderService {
@@ -44,23 +45,6 @@ impl RenderService {
     
     /// Create a new RenderService with event system
     pub fn new_with_event_system(event_sender: Sender<RenderEvent>, event_receiver: Arc<Mutex<Receiver<RenderEvent>>>) -> Self {
-        Self {
-            gl_service: GlService::new(),
-            event_sender,
-            event_receiver,
-            state: SystemState::Uninitialized,
-            basic_shader: None,
-            rect_vao: None,
-            rect_vbo: None,
-            initialized: false,
-            uniform_rect_position: None,
-            uniform_rect_size: None,
-            uniform_color: None,
-        }
-    }
-    
-    /// Create a new RenderService with GlWrapper and event system
-    pub fn new_with_gl_and_events(_gl_wrapper: crate::render::gl_wrapper::GlWrapper, event_sender: Sender<RenderEvent>, event_receiver: Arc<Mutex<Receiver<RenderEvent>>>) -> Self {
         Self {
             gl_service: GlService::new(),
             event_sender,
@@ -158,61 +142,31 @@ impl RenderService {
         Ok(program)
     }
     
+    /// Helper function to fetch uniform location from shader program
+    fn fetch_uniform_location(&mut self, program: u32, name: &str) -> SystemResult<i32> {
+        self.gl_service.send_command(GlCommand::GetUniformLocation { 
+            program, 
+            name: name.to_string() 
+        })?;
+        let result = self.gl_service.receive_result()?;
+        match result {
+            GlResult::UniformLocation { location, .. } => {
+                if location != -1 {
+                    Ok(location)
+                } else {
+                    Err(SystemError::ProcessingFailed(format!("Uniform '{}' not found in shader", name)))
+                }
+            }
+            GlResult::Error { message } => Err(SystemError::ProcessingFailed(message)),
+            _ => Err(SystemError::ProcessingFailed("Unexpected result when getting uniform location".to_string())),
+        }
+    }
+
     /// Resolve and cache uniform locations for the shader program
     fn cache_uniform_locations(&mut self, program: u32) -> SystemResult<()> {
-        // Get uniform location for rect_position
-        self.gl_service.send_command(GlCommand::GetUniformLocation { 
-            program, 
-            name: "rect_position".to_string() 
-        })?;
-        let result = self.gl_service.receive_result()?;
-        match result {
-            GlResult::UniformLocation { location, .. } => {
-                if location != -1 {
-                    self.uniform_rect_position = Some(location);
-                } else {
-                    return Err(SystemError::ProcessingFailed("Uniform 'rect_position' not found in shader".to_string()));
-                }
-            }
-            GlResult::Error { message } => return Err(SystemError::ProcessingFailed(message)),
-            _ => return Err(SystemError::ProcessingFailed("Unexpected result when getting uniform location".to_string())),
-        }
-        
-        // Get uniform location for rect_size
-        self.gl_service.send_command(GlCommand::GetUniformLocation { 
-            program, 
-            name: "rect_size".to_string() 
-        })?;
-        let result = self.gl_service.receive_result()?;
-        match result {
-            GlResult::UniformLocation { location, .. } => {
-                if location != -1 {
-                    self.uniform_rect_size = Some(location);
-                } else {
-                    return Err(SystemError::ProcessingFailed("Uniform 'rect_size' not found in shader".to_string()));
-                }
-            }
-            GlResult::Error { message } => return Err(SystemError::ProcessingFailed(message)),
-            _ => return Err(SystemError::ProcessingFailed("Unexpected result when getting uniform location".to_string())),
-        }
-        
-        // Get uniform location for color
-        self.gl_service.send_command(GlCommand::GetUniformLocation { 
-            program, 
-            name: "color".to_string() 
-        })?;
-        let result = self.gl_service.receive_result()?;
-        match result {
-            GlResult::UniformLocation { location, .. } => {
-                if location != -1 {
-                    self.uniform_color = Some(location);
-                } else {
-                    return Err(SystemError::ProcessingFailed("Uniform 'color' not found in shader".to_string()));
-                }
-            }
-            GlResult::Error { message } => return Err(SystemError::ProcessingFailed(message)),
-            _ => return Err(SystemError::ProcessingFailed("Unexpected result when getting uniform location".to_string())),
-        }
+        self.uniform_rect_position = Some(self.fetch_uniform_location(program, "rect_position")?);
+        self.uniform_rect_size = Some(self.fetch_uniform_location(program, "rect_size")?);
+        self.uniform_color = Some(self.fetch_uniform_location(program, "color")?);
         
         Ok(())
     }
@@ -267,10 +221,10 @@ impl RenderService {
     }
     
     /// Process a render event
-    fn process_render_event(&mut self, event: RenderEvent) -> SystemResult<()> {
+    fn process_render_event(&mut self, event: &RenderEvent) -> SystemResult<()> {
         match event {
             RenderEvent::ClearScreen { r, g, b, a, .. } => {
-                self.gl_service.send_command(GlCommand::SetClearColor { r, g, b, a })?;
+                self.gl_service.send_command(GlCommand::SetClearColor { r: *r, g: *g, b: *b, a: *a })?;
                 self.gl_service.send_command(GlCommand::ClearColorBuffer)?;
             }
             
@@ -283,7 +237,7 @@ impl RenderService {
                     if let Some(location) = self.uniform_rect_position {
                         self.gl_service.send_command(GlCommand::SetUniform2f { 
                             location,
-                            x, y 
+                            x: *x, y: *y 
                         })?;
                     } else {
                         return Err(SystemError::ProcessingFailed("Uniform 'rect_position' location not cached".to_string()));
@@ -292,7 +246,7 @@ impl RenderService {
                     if let Some(location) = self.uniform_rect_size {
                         self.gl_service.send_command(GlCommand::SetUniform2f { 
                             location,
-                            x: width, y: height 
+                            x: *width, y: *height 
                         })?;
                     } else {
                         return Err(SystemError::ProcessingFailed("Uniform 'rect_size' location not cached".to_string()));
@@ -372,8 +326,12 @@ impl GameSystem for RenderService {
         
         // Process events outside the lock
         for event in events {
-            if let Err(e) = self.process_render_event(event) {
-                eprintln!("RenderService error: {}", e);
+            if let Err(e) = self.process_render_event(&event) {
+                error!(
+                    "RenderService failed to process render event: event_type={:?}, error={}",
+                    event,
+                    e
+                );
             }
         }
         
@@ -384,7 +342,7 @@ impl GameSystem for RenderService {
         // Process events from the event system
         for event in events {
             if let Some(render_event) = event.as_any().downcast_ref::<RenderEvent>() {
-                self.process_render_event(render_event.clone())?;
+                self.process_render_event(render_event)?;
             }
         }
         

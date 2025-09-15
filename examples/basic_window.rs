@@ -23,6 +23,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
              engine.get_window_manager().get_size().1);
     
     // Run the engine (this will handle the event loop and window management)
-    engine.run();
+    engine.run()?;
     Ok(())
 }
