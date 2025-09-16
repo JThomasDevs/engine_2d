@@ -35,23 +35,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✅ Renderer created successfully");
     
     // Try to initialize renderer (will fail gracefully without OpenGL context)
-    println!("Attempting to initialize renderer...");
+    println!("Attempting to initialize renderer without OpenGL context...");
     match renderer.initialize() {
         Ok(()) => println!("✅ Renderer initialized with OpenGL context"),
         Err(e) => println!("⚠️  Renderer initialization failed (expected): {}", e),
     }
     
     // Try to clear screen (will fail gracefully)
-    println!("Attempting to clear screen...");
+    println!("Attempting to clear screen without OpenGL context...");
     match renderer.clear(0.2, 0.3, 0.3, 1.0) {
         Ok(()) => println!("✅ Screen cleared successfully"),
         Err(e) => println!("⚠️  Screen clear failed (expected): {}", e),
     }
     
     // Try to draw a rectangle (will fail gracefully)
-    println!("Attempting to draw rectangle...");
+    println!("Attempting to draw rectangle without OpenGL context...");
     let position = Vec2::new(0.0, 0.0);
-    let size = Vec2::new(100.0, 100.0);
+    let size = Vec2::new(0.2, 0.2);
     let color = (1.0, 0.0, 0.0); // Red
     
     match renderer.draw_rect(position, size, color) {
@@ -66,12 +66,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✅ Clean API for engine users");
     println!("✅ No unsafe code visible to engine users");
     
-    println!("\n=== Next Steps ===");
-    println!("1. Implement OpenGL context creation");
-    println!("2. Call gl_wrapper.initialize() when context is ready");
-    println!("3. Call renderer.initialize() to set up shaders");
-    println!("4. Add rendering calls to game loop");
-    println!("5. See colored rectangles on screen!");
+    println!("\n=== Engine Integration ===");
+    println!("✅ Engine automatically creates OpenGL context");
+    println!("✅ Engine automatically initializes renderer");
+    println!("✅ Engine handles rendering in game loop");
+    println!("✅ You'll see colored rectangles when the engine runs!");
     
     println!("\nPress 'Q' or 'ESC' to quit");
     
