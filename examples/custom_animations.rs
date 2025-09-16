@@ -1,6 +1,6 @@
 use engine_2d::engine::{Engine, EngineConfig};
 use engine_2d::animation::Animation;
-use engine_2d::render::sprite::Sprite;
+use engine_2d::render::sprite::{Sprite, SpriteRenderer};
 use glam::Vec2;
 
 /// Circular animation - sprites move in circular patterns
@@ -17,12 +17,23 @@ impl CircularAnimation {
 }
 
 impl Animation for CircularAnimation {
-    fn update(&self, sprites: &mut [Sprite], elapsed_time: f32) {
-        for (i, sprite) in sprites.iter_mut().enumerate() {
+    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+        // Create color textures for the sprites
+        let red_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (255, 0, 0, 255)) {
+            Ok(id) => id,
+            Err(_) => return,
+        };
+        
+        // Create sprites in circular motion
+        for i in 0..4 {
             let offset = i as f32 * 0.5;
             let x = (elapsed_time + offset).sin() * 0.3;
             let y = (elapsed_time * 0.7 + offset).cos() * 0.2;
-            sprite.set_position(Vec2::new(x, y));
+            
+            let mut sprite = Sprite::new(red_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
+            if let Err(_) = sprite_renderer.render_sprite(&sprite) {
+                // Handle render error
+            }
         }
     }
     
@@ -45,13 +56,24 @@ impl BouncingAnimation {
 }
 
 impl Animation for BouncingAnimation {
-    fn update(&self, sprites: &mut [Sprite], elapsed_time: f32) {
-        for (i, sprite) in sprites.iter_mut().enumerate() {
+    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+        // Create color textures for the sprites
+        let green_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 255, 0, 255)) {
+            Ok(id) => id,
+            Err(_) => return,
+        };
+        
+        // Create sprites in bouncing motion
+        for i in 0..4 {
             let offset = i as f32 * 0.3;
             let bounce_height = (elapsed_time * 2.0 + offset).sin().abs() * 0.4;
-            let x = sprite.position.x; // Keep X position fixed
+            let x = (i as f32 - 1.5) * 0.2; // Spread horizontally
             let y = bounce_height - 0.2; // Center the bounce
-            sprite.set_position(Vec2::new(x, y));
+            
+            let mut sprite = Sprite::new(green_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
+            if let Err(_) = sprite_renderer.render_sprite(&sprite) {
+                // Handle render error
+            }
         }
     }
     
@@ -74,13 +96,24 @@ impl SpinningAnimation {
 }
 
 impl Animation for SpinningAnimation {
-    fn update(&self, sprites: &mut [Sprite], elapsed_time: f32) {
-        for (i, sprite) in sprites.iter_mut().enumerate() {
+    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+        // Create color textures for the sprites
+        let blue_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 0, 255, 255)) {
+            Ok(id) => id,
+            Err(_) => return,
+        };
+        
+        // Create sprites in spinning motion
+        for i in 0..4 {
             let angle = elapsed_time * 1.5 + (i as f32 * 1.57); // 90 degrees apart
             let radius = 0.3;
             let x = angle.cos() * radius;
             let y = angle.sin() * radius;
-            sprite.set_position(Vec2::new(x, y));
+            
+            let mut sprite = Sprite::new(blue_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
+            if let Err(_) = sprite_renderer.render_sprite(&sprite) {
+                // Handle render error
+            }
         }
     }
     

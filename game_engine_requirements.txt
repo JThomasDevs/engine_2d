@@ -1,0 +1,81 @@
+GAME ENGINE REQUIREMENTS & COMPONENTS
+=====================================
+
+DEVELOPMENT APPROACH:
+- Build a game with the engine simultaneously (don't build abstractly)
+- Clone a simple game (puzzle, battleships, blackjack) to test APIs
+- Discover and fix design flaws early through practical use
+
+CORE REQUIREMENTS (Basic 2D Engine):
+====================================
+
+1. COMMON ELEMENTS:
+   - Vector / Point
+   - Matrix
+   - Color
+   - Other mathematical utilities
+
+2. AUDIO SYSTEM:
+   - Sound playback
+   - Audio management
+
+3. GRAPHICS SYSTEM:
+   - Textured / untextured quads (with / without lighting)
+   - Polylines / beams
+   - Debug lines / boxes / circles / grids
+   - Text rendering
+   - Particle systems
+   - Streaks
+
+4. FILE SYSTEM:
+   - Resource loading
+   - Asset management
+
+5. COLLISION SYSTEM:
+   - Collision detection
+   - Physics bodies
+
+6. WINDOW MANAGEMENT FRAMEWORK:
+   - Window creation
+   - Event handling
+   - Context management
+
+7. INPUT HANDLING:
+   - Keyboard input
+   - Mouse input
+   - Gamepad input
+
+ADVANCED FEATURES (Game-Dependent):
+==================================
+
+1. ANIMATION:
+   - Sprite animation
+   - Tweening
+   - Animation frameworks
+
+2. MODELS / ENTITIES / AGENTS:
+   - Entity-Component-System (ECS)
+   - Game object management
+
+3. SCRIPTING / EVENT SYSTEMS:
+   - Custom scripting
+   - Event-driven architecture
+
+4. UI WIDGETS:
+   - User interface components
+   - Menu systems
+
+5. WORLD / SCENE MANAGEMENT:
+   - Scene transitions
+   - Level management
+
+6. PATHFINDING:
+   - AI navigation
+   - Route planning
+
+IMPLEMENTATION PRIORITY:
+=======================
+- Start with core requirements
+- Build a simple game to test each system
+- Add advanced features based on game needs
+- Iterate and refine based on practical usage
