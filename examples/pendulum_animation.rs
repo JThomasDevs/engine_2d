@@ -1,6 +1,7 @@
 use engine_2d::engine::{Engine, EngineConfig};
 use engine_2d::animation::Animation;
 use engine_2d::render::sprite::{Sprite, SpriteRenderer};
+use engine_2d::render::texture::TextureId;
 use glam::Vec2;
 
 /// Custom pendulum animation implementation
@@ -9,38 +10,65 @@ use glam::Vec2;
 /// by implementing the Animation trait
 struct PendulumAnimation {
     name: String,
+    red_texture: Option<TextureId>,
+    green_texture: Option<TextureId>,
+    blue_texture: Option<TextureId>,
+    yellow_texture: Option<TextureId>,
 }
 
 impl PendulumAnimation {
     fn new() -> Self {
         Self {
             name: "Pendulum Animation".to_string(),
+            red_texture: None,
+            green_texture: None,
+            blue_texture: None,
+            yellow_texture: None,
+        }
+    }
+    
+    /// Initialize textures - call this after the sprite renderer is available
+    fn initialize_textures(&mut self, sprite_renderer: &mut SpriteRenderer) -> Result<(), String> {
+        // Create color textures once
+        self.red_texture = Some(sprite_renderer.texture_manager().create_color_texture(64, 64, (255, 0, 0, 255))?);
+        self.green_texture = Some(sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 255, 0, 255))?);
+        self.blue_texture = Some(sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 0, 255, 255))?);
+        self.yellow_texture = Some(sprite_renderer.texture_manager().create_color_texture(64, 64, (255, 255, 0, 255))?);
+        Ok(())
+    }
+    
+    /// Clean up textures
+    fn cleanup_textures(&mut self, sprite_renderer: &mut SpriteRenderer) {
+        if let Some(texture_id) = self.red_texture.take() {
+            let _ = sprite_renderer.texture_manager().delete_texture(texture_id);
+        }
+        if let Some(texture_id) = self.green_texture.take() {
+            let _ = sprite_renderer.texture_manager().delete_texture(texture_id);
+        }
+        if let Some(texture_id) = self.blue_texture.take() {
+            let _ = sprite_renderer.texture_manager().delete_texture(texture_id);
+        }
+        if let Some(texture_id) = self.yellow_texture.take() {
+            let _ = sprite_renderer.texture_manager().delete_texture(texture_id);
         }
     }
 }
 
 impl Animation for PendulumAnimation {
-    fn update(&self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
-        // Create sprites each frame (simple approach for demonstration)
-        // In a real game, you'd want to create them once and store them
+    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+        // Initialize textures on first update if not already done
+        if self.red_texture.is_none() {
+            if let Err(e) = self.initialize_textures(sprite_renderer) {
+                eprintln!("Failed to initialize textures: {}", e);
+                return;
+            }
+        }
         
-        // Create color textures
-        let red_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (255, 0, 0, 255)) {
-            Ok(id) => id,
-            Err(_) => return, // Skip this frame if texture creation fails
-        };
-        let green_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 255, 0, 255)) {
-            Ok(id) => id,
-            Err(_) => return,
-        };
-        let blue_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 0, 255, 255)) {
-            Ok(id) => id,
-            Err(_) => return,
-        };
-        let yellow_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (255, 255, 0, 255)) {
-            Ok(id) => id,
-            Err(_) => return,
-        };
+        // Get texture IDs (we know they exist at this point)
+        let red_texture = self.red_texture.unwrap();
+        let green_texture = self.green_texture.unwrap();
+        let blue_texture = self.blue_texture.unwrap();
+        let yellow_texture = self.yellow_texture.unwrap();
         
         // Create sprites stacked in the center (as requested)
         let mut sprites = vec![
@@ -75,6 +103,14 @@ impl Animation for PendulumAnimation {
     
     fn name(&self) -> &str {
         &self.name
+    }
+}
+
+impl Drop for PendulumAnimation {
+    fn drop(&mut self) {
+        // Note: We can't access sprite_renderer here since it's not available in Drop
+        // The cleanup will be handled by the engine when the animation is replaced
+        // or by calling cleanup_textures explicitly before dropping
     }
 }
 

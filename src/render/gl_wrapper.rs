@@ -625,7 +625,7 @@ impl GlWrapper {
         // No-op for headless mode
         Ok(())
     }
-examples    
+    
     // ===== TEXTURE METHODS =====
     
     /// Generate texture

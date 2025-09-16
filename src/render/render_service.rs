@@ -2,15 +2,23 @@ use crate::render::gl_service::{GlService, GlCommand, GlResult};
 use crate::events::event_types::RenderEvent;
 use crate::events::system_trait::{GameSystem, SystemError, SystemResult, SystemState, SystemPriority};
 use std::time::Duration;
-use std::sync::mpsc::{self, Sender, Receiver};
+use std::sync::mpsc::{Sender, Receiver};
 use std::sync::{Arc, Mutex};
 use log::error;
+#[cfg(feature = "gl")]
+use gl;
+
+// Shader type constants for non-GL builds
+#[cfg(not(feature = "gl"))]
+const GL_VERTEX_SHADER: u32 = 0x8B31;
+#[cfg(not(feature = "gl"))]
+const GL_FRAGMENT_SHADER: u32 = 0x8B30;
 
 /// High-level rendering service that processes render events
 pub struct RenderService {
     gl_service: GlService,
-    event_sender: Sender<RenderEvent>,
-    event_receiver: Arc<Mutex<Receiver<RenderEvent>>>,
+    event_sender: Option<Sender<RenderEvent>>,
+    event_receiver: Option<Arc<Mutex<Receiver<RenderEvent>>>>,
     state: SystemState,
     
     // Rendering state
@@ -30,8 +38,8 @@ impl RenderService {
     pub fn new() -> Self {
         Self {
             gl_service: GlService::new(),
-            event_sender: mpsc::channel().0, // Dummy sender, will be replaced
-            event_receiver: Arc::new(Mutex::new(mpsc::channel().1)), // Dummy receiver, will be replaced
+            event_sender: None,
+            event_receiver: None,
             state: SystemState::Uninitialized,
             basic_shader: None,
             rect_vao: None,
@@ -47,8 +55,8 @@ impl RenderService {
     pub fn new_with_event_system(event_sender: Sender<RenderEvent>, event_receiver: Arc<Mutex<Receiver<RenderEvent>>>) -> Self {
         Self {
             gl_service: GlService::new(),
-            event_sender,
-            event_receiver,
+            event_sender: Some(event_sender),
+            event_receiver: Some(event_receiver),
             state: SystemState::Uninitialized,
             basic_shader: None,
             rect_vao: None,
@@ -61,7 +69,7 @@ impl RenderService {
     }
     
     /// Get the event sender for this service
-    pub fn get_event_sender(&self) -> Sender<RenderEvent> {
+    pub fn get_event_sender(&self) -> Option<Sender<RenderEvent>> {
         self.event_sender.clone()
     }
     
@@ -72,8 +80,15 @@ impl RenderService {
         }
         
         // Create basic shader
-        let vertex_shader = self.create_shader(include_str!("shaders/basic.vert"))?;
-        let fragment_shader = self.create_shader(include_str!("shaders/basic.frag"))?;
+        #[cfg(feature = "gl")]
+        let vertex_shader = self.create_shader(include_str!("shaders/basic.vert"), gl::VERTEX_SHADER)?;
+        #[cfg(not(feature = "gl"))]
+        let vertex_shader = self.create_shader(include_str!("shaders/basic.vert"), GL_VERTEX_SHADER)?;
+        
+        #[cfg(feature = "gl")]
+        let fragment_shader = self.create_shader(include_str!("shaders/basic.frag"), gl::FRAGMENT_SHADER)?;
+        #[cfg(not(feature = "gl"))]
+        let fragment_shader = self.create_shader(include_str!("shaders/basic.frag"), GL_FRAGMENT_SHADER)?;
         let shader_program = self.create_shader_program(vertex_shader, fragment_shader)?;
         
         // Cache uniform locations
@@ -91,9 +106,8 @@ impl RenderService {
     }
     
     /// Create a shader from source
-    fn create_shader(&self, source: &str) -> SystemResult<u32> {
+    fn create_shader(&self, source: &str, shader_type: u32) -> SystemResult<u32> {
         // Send create shader command
-        let shader_type = 0x8B31; // GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
         self.gl_service.send_command(GlCommand::CreateShader { shader_type })?;
         
         // Wait for result
@@ -313,12 +327,16 @@ impl GameSystem for RenderService {
     fn update(&mut self, _delta_time: Duration) -> SystemResult<()> {
         // Process all pending render events
         let events: Vec<RenderEvent> = {
-            if let Ok(receiver) = self.event_receiver.lock() {
-                let mut events = Vec::new();
-                while let Ok(event) = receiver.try_recv() {
-                    events.push(event);
+            if let Some(ref receiver) = self.event_receiver {
+                if let Ok(receiver) = receiver.lock() {
+                    let mut events = Vec::new();
+                    while let Ok(event) = receiver.try_recv() {
+                        events.push(event);
+                    }
+                    events
+                } else {
+                    Vec::new()
                 }
-                events
             } else {
                 Vec::new()
             }

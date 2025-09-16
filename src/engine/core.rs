@@ -136,13 +136,10 @@ impl Engine {
             self.animation.update(&mut self.sprite_renderer, elapsed);
             
             // Print success message once
-            static mut PRINTED: bool = false;
-            unsafe {
-                if !PRINTED {
-                    println!("Successfully running animation: {}", self.animation.name());
-                    PRINTED = true;
-                }
-            }
+            static PRINTED: std::sync::Once = std::sync::Once::new();
+            PRINTED.call_once(|| {
+                println!("Successfully running animation: {}", self.animation.name());
+            });
             
             // Swap buffers
             self.window_manager.swap_buffers();

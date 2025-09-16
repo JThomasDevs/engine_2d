@@ -12,7 +12,7 @@ pub trait Animation {
     /// # Arguments
     /// * `sprite_renderer` - Access to sprite renderer for creating/rendering sprites
     /// * `elapsed_time` - Time in seconds since the animation started
-    fn update(&self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32);
+    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32);
     
     /// Get the name of the animation (for debugging/logging purposes)
     fn name(&self) -> &str;
@@ -34,7 +34,7 @@ impl NoAnimation {
 }
 
 impl Animation for NoAnimation {
-    fn update(&self, _sprite_renderer: &mut SpriteRenderer, _elapsed_time: f32) {
+    fn update(&mut self, _sprite_renderer: &mut SpriteRenderer, _elapsed_time: f32) {
         // Do nothing - no sprites are created or animated
     }
     
