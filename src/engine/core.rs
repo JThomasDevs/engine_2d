@@ -2,10 +2,10 @@ use std::time::{Duration, Instant};
 use super::window::WindowManager;
 use super::config::EngineConfig;
 use crate::events::event_system::EventSystem;
-use crate::events::event_types::RenderEvent;
 use crate::render::renderer::Renderer;
+use crate::render::sprite::SpriteRenderer;
 use crate::render::gl_wrapper::GlWrapper;
-use glam::Vec2;
+use crate::animation::Animation;
 #[cfg(feature = "glfw")]
 use glfw::{Action, Key};
 
@@ -26,14 +26,25 @@ pub struct Engine {
     
     // Rendering system
     renderer: Renderer,
+    sprite_renderer: SpriteRenderer,
+    
+    // Animation timing
+    start_time: Instant,
+    
+    // Current animation
+    animation: Box<dyn Animation>,
 }
 
 impl Engine {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        Self::new_with_config(EngineConfig::default())
+        Self::new_with_config_and_animation(EngineConfig::default(), Box::new(crate::animation::NoAnimation::new()))
     }
     
     pub fn new_with_config(config: EngineConfig) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::new_with_config_and_animation(config, Box::new(crate::animation::NoAnimation::new()))
+    }
+    
+    pub fn new_with_config_and_animation(config: EngineConfig, animation: Box<dyn Animation>) -> Result<Self, Box<dyn std::error::Error>> {
         // Create GlWrapper first
         let mut gl_wrapper = GlWrapper::new();
         
@@ -44,9 +55,15 @@ impl Engine {
         let event_system = EventSystem::new();
         
         // Create renderer with GlWrapper
-        let mut renderer = Renderer::new_with_gl(gl_wrapper);
+        let mut renderer = Renderer::new_with_gl(gl_wrapper.clone());
         if let Err(e) = renderer.initialize() {
             return Err(format!("Failed to initialize renderer: {}", e).into());
+        }
+        
+        // Create sprite renderer with the same GlWrapper
+        let mut sprite_renderer = SpriteRenderer::new(gl_wrapper);
+        if let Err(e) = sprite_renderer.initialize() {
+            return Err(format!("Failed to initialize sprite renderer: {}", e).into());
         }
         
         Ok(Self {
@@ -57,6 +74,9 @@ impl Engine {
             config,
             event_system,
             renderer,
+            sprite_renderer,
+            start_time: Instant::now(),
+            animation,
         })
     }
     
@@ -67,6 +87,11 @@ impl Engine {
     
     pub fn get_config(&self) -> &EngineConfig {
         &self.config
+    }
+    
+    /// Get access to the sprite renderer for creating sprites
+    pub fn get_sprite_renderer(&mut self) -> &mut SpriteRenderer {
+        &mut self.sprite_renderer
     }
     
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -101,47 +126,21 @@ impl Engine {
                 }
             });
             
-            // Send render event to draw red rectangle
-            let render_event = RenderEvent::DrawRectangle {
-                x: 100.0,
-                y: 100.0,
-                width: 200.0,
-                height: 150.0,
-                color: (1.0, 0.0, 0.0), // Red
-                timestamp: Instant::now(),
-            };
-            
-            if let Err(e) = self.event_system.send_render_event(render_event) {
-                eprintln!("Failed to send render event: {}", e);
-            }
-            
-            // Render directly using the renderer
-            if let Err(e) = self.renderer.clear(0.0, 0.0, 0.0, 1.0) {
+            // Clear screen with dark background
+            if let Err(e) = self.renderer.clear(0.1, 0.1, 0.1, 1.0) {
                 eprintln!("Renderer clear error: {}", e);
             }
             
-            // Draw red rectangle in the center of the screen
-            // Convert pixel coordinates to normalized coordinates (-1 to 1)
-            let _window_size = self.window_manager.get_size();
-            let center_x = 0.0; // Center horizontally
-            let center_y = 0.0; // Center vertically
-            let rect_width = 0.4;  // 40% of screen width
-            let rect_height = 0.3; // 30% of screen height
+            // Update animation (animation is responsible for creating and rendering sprites)
+            let elapsed = self.start_time.elapsed().as_secs_f32();
+            self.animation.update(&mut self.sprite_renderer, elapsed);
             
-            if let Err(e) = self.renderer.draw_rect(
-                Vec2::new(center_x, center_y), 
-                Vec2::new(rect_width, rect_height), 
-                (1.0, 0.0, 0.0)
-            ) {
-                eprintln!("Renderer draw error: {}", e);
-            } else {
-                // Only print this once to avoid spam
-                static mut PRINTED: bool = false;
-                unsafe {
-                    if !PRINTED {
-                        println!("Successfully drew red rectangle at center with size (0.4, 0.3)");
-                        PRINTED = true;
-                    }
+            // Print success message once
+            static mut PRINTED: bool = false;
+            unsafe {
+                if !PRINTED {
+                    println!("Successfully running animation: {}", self.animation.name());
+                    PRINTED = true;
                 }
             }
             

@@ -625,4 +625,142 @@ impl GlWrapper {
         // No-op for headless mode
         Ok(())
     }
+examples    
+    // ===== TEXTURE METHODS =====
+    
+    /// Generate texture
+    #[cfg(feature = "gl")]
+    pub fn gen_texture(&self) -> Result<u32, String> {
+        self.check_initialized()?;
+        let mut texture = 0;
+        unsafe {
+            gl::GenTextures(1, &mut texture);
+        }
+        Ok(texture)
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn gen_texture(&self) -> Result<u32, String> {
+        // Return dummy texture ID for headless mode
+        Ok(0xDEADBEEF)
+    }
+    
+    /// Bind texture
+    #[cfg(feature = "gl")]
+    pub fn bind_texture(&self, target: u32, texture: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::BindTexture(target, texture);
+        }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn bind_texture(&self, _target: u32, _texture: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
+    
+    /// Set texture parameter
+    #[cfg(feature = "gl")]
+    pub fn tex_parameter_i(&self, target: u32, pname: u32, param: i32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::TexParameteri(target, pname, param);
+        }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn tex_parameter_i(&self, _target: u32, _pname: u32, _param: i32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
+    
+    /// Upload texture image data
+    #[cfg(feature = "gl")]
+    pub fn tex_image_2d(&self, target: u32, level: i32, internal_format: i32, width: i32, height: i32, border: i32, format: u32, data_type: u32, data: Option<&[u8]>) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::TexImage2D(
+                target,
+                level,
+                internal_format,
+                width,
+                height,
+                border,
+                format,
+                data_type,
+                data.map(|d| d.as_ptr() as *const std::ffi::c_void).unwrap_or(std::ptr::null())
+            );
+        }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn tex_image_2d(&self, _target: u32, _level: i32, _internal_format: i32, _width: i32, _height: i32, _border: i32, _format: u32, _data_type: u32, _data: Option<&[u8]>) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
+    
+    /// Delete texture
+    #[cfg(feature = "gl")]
+    pub fn delete_texture(&self, texture: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::DeleteTextures(1, &texture);
+        }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn delete_texture(&self, _texture: u32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
+    
+    /// Set uniform for texture sampler
+    #[cfg(feature = "gl")]
+    pub fn set_uniform_1i(&self, location: i32, value: i32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::Uniform1i(location, value);
+        }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_uniform_1i(&self, _location: i32, _value: i32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
+    
+    /// Set uniform for float value
+    #[cfg(feature = "gl")]
+    pub fn set_uniform_1f(&self, location: i32, value: f32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::Uniform1f(location, value);
+        }
+        Ok(())
+    }
+
+    #[cfg(not(feature = "gl"))]
+    pub fn set_uniform_1f(&self, _location: i32, _value: f32) -> Result<(), String> {
+        // No-op for headless mode
+        Ok(())
+    }
+}
+
+// Implement Clone for GlWrapper
+impl Clone for GlWrapper {
+    fn clone(&self) -> Self {
+        Self {
+            initialized: self.initialized,
+            #[cfg(feature = "glfw")]
+            glfw: None, // Don't clone GLFW reference
+            #[cfg(feature = "glfw")]
+            window: None, // Don't clone window reference
+        }
+    }
 }
