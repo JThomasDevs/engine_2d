@@ -5,16 +5,16 @@ use crate::render::sprite::SpriteRenderer;
 /// 
 /// This trait allows game makers to implement their own animation logic
 /// without modifying the engine core. The engine will call update() each frame
-/// with access to the sprite renderer and elapsed time, allowing you to create
+/// with access to the sprite renderer (when available) and elapsed time, allowing you to create
 /// and animate sprites as needed.
 #[cfg(feature = "opengl")]
 pub trait Animation {
     /// Update the animation
     /// 
     /// # Arguments
-    /// * `sprite_renderer` - Access to sprite renderer for creating/rendering sprites
+    /// * `sprite_renderer` - Optional access to sprite renderer for creating/rendering sprites (None in headless mode)
     /// * `elapsed_time` - Time in seconds since the animation started
-    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32);
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32);
     
     /// Get the name of the animation (for debugging/logging purposes)
     fn name(&self) -> &str;
@@ -49,7 +49,7 @@ impl NoAnimation {
 
 #[cfg(feature = "opengl")]
 impl Animation for NoAnimation {
-    fn update(&mut self, _sprite_renderer: &mut SpriteRenderer, _elapsed_time: f32) {
+    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, _elapsed_time: f32) {
         // Do nothing - no sprites are created or animated
     }
     

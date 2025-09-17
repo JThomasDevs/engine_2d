@@ -27,7 +27,13 @@ impl CircularAnimation {
 }
 
 impl Animation for CircularAnimation {
-    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32) {
+        // Only render if we have a sprite renderer (OpenGL mode)
+        let Some(sprite_renderer) = sprite_renderer else {
+            // In headless mode, just do the animation logic without rendering
+            return;
+        };
+        
         // Initialize texture if not already done
         if let Err(e) = self.initialize(sprite_renderer) {
             eprintln!("Failed to initialize red texture: {}", e);
@@ -90,7 +96,13 @@ impl BouncingAnimation {
 }
 
 impl Animation for BouncingAnimation {
-    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32) {
+        // Only render if we have a sprite renderer (OpenGL mode)
+        let Some(sprite_renderer) = sprite_renderer else {
+            // In headless mode, just do the animation logic without rendering
+            return;
+        };
+        
         // Initialize texture if not already done
         if let Err(e) = self.initialize(sprite_renderer) {
             eprintln!("Failed to initialize green texture: {}", e);
@@ -154,7 +166,13 @@ impl SpinningAnimation {
 }
 
 impl Animation for SpinningAnimation {
-    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32) {
+        // Only render if we have a sprite renderer (OpenGL mode)
+        let Some(sprite_renderer) = sprite_renderer else {
+            // In headless mode, just do the animation logic without rendering
+            return;
+        };
+        
         // Initialize texture if not already done
         if let Err(e) = self.initialize(sprite_renderer) {
             eprintln!("Failed to initialize blue texture: {}", e);

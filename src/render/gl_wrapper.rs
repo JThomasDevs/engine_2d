@@ -465,82 +465,9 @@ impl GlWrapper {
     }
 }
 
-/// Clone implementation for GlWrapper
-/// 
-/// **IMPORTANT**: Cloned instances are intentionally uninitialized and must be re-initialized
-/// before any use. This is by design to avoid sharing OpenGL contexts between instances.
-/// 
-/// **Usage Warning**: After cloning, you MUST call `initialize()` on the cloned instance
-/// before using any OpenGL methods, otherwise runtime errors will occur.
-/// 
-/// To verify proper usage, search for `.clone()` calls in the codebase and ensure each
-/// call site re-initializes the clone before use.
-impl Clone for GlWrapper {
-    fn clone(&self) -> Self {
-        Self {
-            initialized: false, // Cloned instances are not initialized
-            glfw: None, // Don't clone GLFW reference
-            window: None, // Don't clone window reference
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Test that cloned GlWrapper instances are uninitialized and fail fast
-    /// 
-    /// This test verifies that:
-    /// 1. Cloned instances are not initialized
-    /// 2. Using cloned instances without re-initialization fails fast
-    /// 3. The error message is clear about the initialization requirement
-    #[test]
-    fn test_cloned_gl_wrapper_is_uninitialized() {
-        let original = GlWrapper::new();
-        let cloned = original.clone();
-        
-        // Verify cloned instance is not initialized
-        assert!(!cloned.initialized);
-        
-        // Test the check_initialized method directly to avoid debug assertions
-        let result = cloned.check_initialized();
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not initialized"));
-        
-        // Note: In debug builds, calling methods like set_viewport() will trigger
-        // debug_assert! which will panic. In release builds, these methods will
-        // return proper error messages. This demonstrates that our defensive
-        // checks work in both debug and release modes.
-    }
-    
-    /// Test that demonstrates proper usage pattern for cloned GlWrapper
-    /// 
-    /// This test shows the correct way to use a cloned GlWrapper:
-    /// 1. Clone the original instance
-    /// 2. Re-initialize the clone before use
-    /// 3. Use the clone normally
-    #[test]
-    fn test_proper_clone_usage_pattern() {
-        // Note: This test is conceptual and would require a real GLFW window
-        // to fully test. In practice, you would:
-        // 1. Create a GLFW window
-        // 2. Clone the GlWrapper
-        // 3. Call initialize() on the clone with the window
-        // 4. Use the clone normally
-        
-        let original = GlWrapper::new();
-        let cloned = original.clone();
-        
-        // Verify the clone is uninitialized
-        assert!(!cloned.initialized);
-        
-        // In real usage, you would call:
-        // cloned.initialize(&mut window)?;
-        // 
-        // Then the clone would be ready for use:
-        // cloned.set_viewport(0, 0, 800, 600)?;
-        // cloned.use_program(program_id)?;
-        // etc.
-    }
 }

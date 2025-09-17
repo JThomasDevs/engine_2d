@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
              engine.get_window_manager().get_size().1);
     
     // Create sprite renderer
-    let mut sprite_renderer = SpriteRenderer::new(GlWrapper::new());
+    let mut sprite_renderer = SpriteRenderer::new(std::rc::Rc::new(GlWrapper::new()));
     println!("✅ Sprite renderer created successfully");
     
     // Try to initialize sprite renderer (will fail gracefully without OpenGL context)

@@ -164,7 +164,7 @@ impl Engine {
             
             // Update animation (animation is responsible for creating and rendering sprites)
             let elapsed = self.start_time.elapsed().as_secs_f32();
-            self.animation.update(&mut self.sprite_renderer, elapsed);
+            self.animation.update(Some(&mut self.sprite_renderer), elapsed);
             
             // Print success message once
             static PRINTED: std::sync::Once = std::sync::Once::new();
@@ -184,6 +184,8 @@ impl Engine {
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         println!("Starting headless engine...");
         println!("Running animation: {}", self.animation.name());
+        
+        self.is_running = true;
         
         // Simple headless game loop - just run the animation logic
         let start_time = Instant::now();

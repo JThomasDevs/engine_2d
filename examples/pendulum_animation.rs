@@ -55,7 +55,13 @@ impl PendulumAnimation {
 }
 
 impl Animation for PendulumAnimation {
-    fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32) {
+        // Only render if we have a sprite renderer (OpenGL mode)
+        let Some(sprite_renderer) = sprite_renderer else {
+            // In headless mode, just do the animation logic without rendering
+            return;
+        };
+        
         // Initialize textures on first update if not already done
         if self.red_texture.is_none() {
             if let Err(e) = self.initialize_textures(sprite_renderer) {

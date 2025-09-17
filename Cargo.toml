@@ -44,3 +44,23 @@ opengl = ["glfw", "gl", "image"]
 [target.'cfg(target_os = "macos")'.dependencies]
 # macOS-specific dependencies (if needed)
 # cocoa = "0.25"
+
+[[example]]
+name = "basic_window"
+required-features = ["opengl"]
+
+[[example]]
+name = "basic_renderer"
+required-features = ["opengl"]
+
+[[example]]
+name = "basic_sprite"
+required-features = ["opengl"]
+
+[[example]]
+name = "custom_animations"
+required-features = ["opengl"]
+
+[[example]]
+name = "pendulum_animation"
+required-features = ["opengl"]
