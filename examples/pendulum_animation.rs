@@ -38,6 +38,7 @@ impl PendulumAnimation {
     }
     
     /// Clean up textures
+    #[allow(dead_code)] // Method is available for explicit cleanup but not used in current implementation
     fn cleanup_textures(&mut self, sprite_renderer: &mut SpriteRenderer) {
         if let Some(texture_id) = self.red_texture.take() {
             let _ = sprite_renderer.texture_manager().delete_texture(texture_id);

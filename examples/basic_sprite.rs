@@ -1,7 +1,6 @@
 use engine_2d::engine::{Engine, EngineConfig};
 use engine_2d::render::sprite::{SpriteRenderer, Sprite};
 use engine_2d::render::gl_wrapper::GlWrapper;
-use engine_2d::render::texture::TextureId;
 use glam::Vec2;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

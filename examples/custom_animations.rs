@@ -54,7 +54,7 @@ impl Animation for CircularAnimation {
             let x = (elapsed_time + offset).sin() * 0.3;
             let y = (elapsed_time * 0.7 + offset).cos() * 0.2;
             
-            let mut sprite = Sprite::new(red_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
+            let sprite = Sprite::new(red_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
             if let Err(e) = sprite_renderer.render_sprite(&sprite) {
                 eprintln!("Failed to render sprite: {}", e);
             }
@@ -124,7 +124,7 @@ impl Animation for BouncingAnimation {
             let x = (i as f32 - 1.5) * 0.2; // Spread horizontally
             let y = bounce_height - 0.2; // Center the bounce
             
-            let mut sprite = Sprite::new(green_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
+            let sprite = Sprite::new(green_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
             if let Err(e) = sprite_renderer.render_sprite(&sprite) {
                 eprintln!("Failed to render sprite: {}", e);
             }
@@ -194,7 +194,7 @@ impl Animation for SpinningAnimation {
             let x = angle.cos() * radius;
             let y = angle.sin() * radius;
             
-            let mut sprite = Sprite::new(blue_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
+            let sprite = Sprite::new(blue_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
             if let Err(e) = sprite_renderer.render_sprite(&sprite) {
                 eprintln!("Failed to render sprite: {}", e);
             }

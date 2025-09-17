@@ -4,6 +4,7 @@ use std::rc::Rc;
 #[cfg(feature = "opengl")]
 use super::window::WindowManager;
 use super::config::EngineConfig;
+#[cfg(feature = "opengl")]
 use crate::events::event_system::EventSystem;
 #[cfg(feature = "opengl")]
 use crate::render::renderer::Renderer;
@@ -18,8 +19,13 @@ use glfw::{Action, Key};
 pub struct Engine {
     // Engine state
     is_running: bool,
+    // Frame timing for device-agnostic animations (used in run() methods)
+    #[allow(dead_code)] // False positive: fields are used in conditional compilation blocks
     delta_time: Duration,
+    #[allow(dead_code)] // False positive: fields are used in conditional compilation blocks
     last_frame_time: Instant,
+    // Total elapsed time since engine start (accumulated from delta_time)
+    elapsed_time: f32,
     
     // OpenGL context is managed by the renderer
     
@@ -28,17 +34,11 @@ pub struct Engine {
     window_manager: WindowManager,
     config: EngineConfig,
     
-    // Event system
-    event_system: EventSystem,
-    
     // Rendering system
     #[cfg(feature = "opengl")]
     renderer: Renderer,
     #[cfg(feature = "opengl")]
     sprite_renderer: SpriteRenderer,
-    
-    // Animation timing
-    start_time: Instant,
     
     // Current animation
     animation: Box<dyn Animation>,
@@ -58,11 +58,11 @@ impl Engine {
         // Create GlWrapper first
         let mut gl_wrapper = GlWrapper::new();
         
-        // Create event system
+        // Create event system for window manager
         let event_system = EventSystem::new();
         
         // Create window manager with GlWrapper and event system
-        let window_manager = WindowManager::new(&config, &mut gl_wrapper, Some(event_system.clone()))?;
+        let window_manager = WindowManager::new(&config, &mut gl_wrapper, Some(event_system))?;
         
         // Wrap GlWrapper in Rc for shared ownership
         let gl_wrapper_rc = Rc::new(gl_wrapper);
@@ -83,28 +83,23 @@ impl Engine {
             is_running: false,
             delta_time: Duration::ZERO,
             last_frame_time: Instant::now(),
+            elapsed_time: 0.0,
             window_manager,
             config,
-            event_system,
             renderer,
             sprite_renderer,
-            start_time: Instant::now(),
             animation,
         })
     }
     
     #[cfg(not(feature = "opengl"))]
     pub fn new_with_config_and_animation(config: EngineConfig, animation: Box<dyn Animation>) -> Result<Self, Box<dyn std::error::Error>> {
-        // Create event system
-        let event_system = EventSystem::new();
-        
         Ok(Self {
             is_running: false,
             delta_time: Duration::ZERO,
             last_frame_time: Instant::now(),
+            elapsed_time: 0.0,
             config,
-            event_system,
-            start_time: Instant::now(),
             animation,
         })
     }
@@ -143,6 +138,9 @@ impl Engine {
             self.delta_time = current_time.duration_since(self.last_frame_time);
             self.last_frame_time = current_time;
             
+            // Accumulate delta time for animations (total elapsed time since start)
+            self.elapsed_time += self.delta_time.as_secs_f32();
+            
             // Process window events
             self.window_manager.poll_events();
             
@@ -163,8 +161,7 @@ impl Engine {
             }
             
             // Update animation (animation is responsible for creating and rendering sprites)
-            let elapsed = self.start_time.elapsed().as_secs_f32();
-            self.animation.update(Some(&mut self.sprite_renderer), elapsed);
+            self.animation.update(Some(&mut self.sprite_renderer), self.elapsed_time);
             
             // Print success message once
             static PRINTED: std::sync::Once = std::sync::Once::new();
@@ -188,16 +185,22 @@ impl Engine {
         self.is_running = true;
         
         // Simple headless game loop - just run the animation logic
-        let start_time = Instant::now();
+        let mut last_frame_time = Instant::now();
         let mut frame_count = 0;
         
         while self.is_running && frame_count < 1000 { // Limit frames for headless mode
-            let elapsed = start_time.elapsed().as_secs_f32();
+            // Update timing for frame-independent animation
+            let current_time = Instant::now();
+            let delta_time = current_time.duration_since(last_frame_time);
+            last_frame_time = current_time;
+            
+            // Accumulate delta time for animations (total elapsed time since start)
+            self.elapsed_time += delta_time.as_secs_f32();
             
             // Update animation (headless mode - no rendering)
             // Note: In headless mode, animations can still process game logic
             // but won't render anything
-            self.animation.update(elapsed);
+            self.animation.update(self.elapsed_time);
             
             frame_count += 1;
             
