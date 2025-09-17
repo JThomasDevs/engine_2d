@@ -3,6 +3,7 @@ use std::sync::mpsc::{self, Sender, Receiver};
 use std::sync::{Arc, Mutex};
 
 /// Simplified event system for basic rendering
+#[derive(Clone)]
 pub struct EventSystem {
     render_sender: Sender<RenderEvent>,
     render_receiver: Arc<Mutex<Receiver<RenderEvent>>>,

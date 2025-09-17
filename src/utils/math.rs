@@ -867,14 +867,16 @@ pub mod physics {
     }
 
     /// Calculate centripetal force for circular motion
-    pub fn centripetal_force(velocity: Vec2, radius: f32, mass: f32) -> Vec2 {
+    pub fn centripetal_force(velocity: Vec2, position: Vec2, center: Vec2, mass: f32) -> Vec2 {
         let speed = velocity.length();
+        let radius = vector::distance(center, position);
+        
         if speed < 1e-6 || radius < 1e-6 {
             return Vec2::ZERO;
         }
         
         let force_magnitude = mass * speed * speed / radius;
-        let force_direction = -vector::normalize(velocity); // Points toward center
+        let force_direction = vector::normalize(center - position); // Points toward center
         
         force_direction * force_magnitude
     }

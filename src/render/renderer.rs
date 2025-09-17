@@ -1,20 +1,10 @@
-#[cfg(feature = "gl")]
 use gl;
+use std::rc::Rc;
 use super::gl_wrapper::GlWrapper;
 use glam::Vec2;
 
-/// Sentinel values for headless mode that are guaranteed to be distinct from valid OpenGL handles.
-/// OpenGL never returns 0 for valid handles, so we use these constants to distinguish headless stubs
-/// from actual failures. Real OpenGL code will never emit these values.
-#[cfg(not(feature = "glfw"))]
-const DUMMY_SHADER_HANDLE: u32 = 0xDEADBEEF;
-#[cfg(not(feature = "glfw"))]
-const DUMMY_VAO_HANDLE: u32 = 0xCAFEBABE;
-#[cfg(not(feature = "glfw"))]
-const DUMMY_VBO_HANDLE: u32 = 0xBABECAFE;
-
 pub struct Renderer {
-    gl: GlWrapper,
+    gl: Rc<GlWrapper>,
     basic_shader: Option<u32>,
     rect_vao: Option<u32>,
     rect_vbo: Option<u32>,
@@ -45,7 +35,7 @@ impl Renderer {
         let gl_wrapper = GlWrapper::new();
         
         Self {
-            gl: gl_wrapper,
+            gl: Rc::new(gl_wrapper),
             basic_shader: None,
             rect_vao: None,
             rect_vbo: None,
@@ -53,7 +43,7 @@ impl Renderer {
     }
     
     /// Create a renderer with an existing GlWrapper (for use with WindowManager)
-    pub fn new_with_gl(gl_wrapper: GlWrapper) -> Self {
+    pub fn new_with_gl(gl_wrapper: Rc<GlWrapper>) -> Self {
         Self {
             gl: gl_wrapper,
             basic_shader: None,
@@ -104,15 +94,11 @@ impl Renderer {
         
         // Draw the rectangle
         self.gl.bind_vertex_array(vao)?;
-        #[cfg(feature = "gl")]
         self.gl.draw_arrays(gl::TRIANGLE_STRIP, 0, 4)?;
-        #[cfg(not(feature = "gl"))]
-        self.gl.draw_arrays(0, 0, 4)?; // Dummy values for headless
         
         Ok(())
     }    
     
-    #[cfg(feature = "gl")]
     fn create_basic_shader(gl: &GlWrapper) -> Result<u32, String> {
         let vertex_shader_source = r#"
             #version 330 core
@@ -187,13 +173,7 @@ impl Renderer {
         Ok(shader_program)
     }
 
-    #[cfg(not(feature = "gl"))]
-    fn create_basic_shader(gl: &GlWrapper) -> Result<u32, String> {
-        // No-op for headless mode
-        Ok(DUMMY_SHADER_HANDLE)
-    }
     
-    #[cfg(feature = "gl")]
     fn create_rect_geometry(gl: &GlWrapper) -> Result<(u32, u32), String> {
         let vertices: [f32; 8] = [
             -0.5, -0.5,  // bottom-left
@@ -218,9 +198,4 @@ impl Renderer {
         Ok((vao, vbo))
     }
 
-    #[cfg(not(feature = "gl"))]
-    fn create_rect_geometry(gl: &GlWrapper) -> Result<(u32, u32), String> {
-        // No-op for headless mode
-        Ok((DUMMY_VAO_HANDLE, DUMMY_VBO_HANDLE))
-    }
 }

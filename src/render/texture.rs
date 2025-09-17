@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use super::gl_wrapper::GlWrapper;
 use image::{ImageBuffer, RgbaImage};
 use std::collections::HashMap;
@@ -17,18 +18,16 @@ pub struct TextureInfo {
 
 /// Texture manager that handles loading and managing textures
 pub struct TextureManager {
-    gl: GlWrapper,
+    gl: Rc<GlWrapper>,
     textures: HashMap<String, TextureInfo>,
-    next_id: u32,
 }
 
 impl TextureManager {
     /// Create a new texture manager
-    pub fn new(gl: GlWrapper) -> Self {
+    pub fn new(gl: Rc<GlWrapper>) -> Self {
         Self {
             gl,
             textures: HashMap::new(),
-            next_id: 1, // Start from 1, 0 is reserved for invalid texture
         }
     }
 
@@ -66,12 +65,8 @@ impl TextureManager {
     pub fn create_texture_from_image(&mut self, img: &RgbaImage) -> Result<u32, String> {
         let (width, height) = img.dimensions();
         
-        // Generate texture ID
-        let texture_id = self.next_id;
-        self.next_id += 1;
-
-        // Create OpenGL texture
-        self.gl.gen_texture()?;
+        // Generate OpenGL texture ID
+        let texture_id = self.gl.gen_texture()?;
         self.gl.bind_texture(0x0DE1, texture_id)?; // GL_TEXTURE_2D
 
         // Set texture parameters

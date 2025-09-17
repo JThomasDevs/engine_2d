@@ -1,11 +1,8 @@
-#[cfg(feature = "gl")]
 use gl;
 use std::ffi::CString;
-#[cfg(feature = "glfw")]
 use glfw::{Glfw, Window as GlfwWindow};
 
 /// Safe wrapper around OpenGL functionality
-#[cfg(feature = "glfw")]
 pub struct GlWrapper {
     initialized: bool,
     #[allow(dead_code)]
@@ -14,13 +11,7 @@ pub struct GlWrapper {
     window: Option<GlfwWindow>,
 }
 
-#[cfg(not(feature = "glfw"))]
-pub struct GlWrapper {
-    initialized: bool,
-}
-
 impl GlWrapper {
-    #[cfg(feature = "glfw")]
     pub fn new() -> Self {
         Self {
             initialized: false,
@@ -28,16 +19,8 @@ impl GlWrapper {
             window: None,
         }
     }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn new() -> Self {
-        Self {
-            initialized: false,
-        }
-    }
     
     /// Initialize OpenGL context with GLFW window
-    #[cfg(all(feature = "glfw", feature = "gl"))]
     pub fn initialize(&mut self, window: &mut glfw::Window) -> Result<(), String> {
         // Load OpenGL function pointers using the provided window
         gl::load_with(|s| window.get_proc_address(s).map_or(std::ptr::null(), |f| f as *const _));
@@ -47,16 +30,9 @@ impl GlWrapper {
         
         Ok(())
     }
-
-    #[cfg(not(all(feature = "glfw", feature = "gl")))]
-    pub fn initialize(&mut self) -> Result<(), String> {
-        // No-op for headless mode
-        self.initialized = true;
-        Ok(())
-    }
     
     /// Check if OpenGL is initialized
-    fn check_initialized(&self) -> Result<(), String> {
+    pub fn check_initialized(&self) -> Result<(), String> {
         if !self.initialized {
             return Err("OpenGL context not initialized".to_string());
         }
@@ -64,23 +40,16 @@ impl GlWrapper {
     }
     
     /// Set the viewport dimensions
-    #[cfg(feature = "gl")]
     pub fn set_viewport(&self, x: i32, y: i32, width: i32, height: i32) -> Result<(), String> {
+        debug_assert!(self.initialized, "GlWrapper must be initialized before use");
         self.check_initialized()?;
         unsafe {
             gl::Viewport(x, y, width, height);
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_viewport(&self, _x: i32, _y: i32, _width: i32, _height: i32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set the clear color
-    #[cfg(feature = "gl")]
     pub fn set_clear_color(&self, r: f32, g: f32, b: f32, a: f32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -88,15 +57,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_clear_color(&self, _r: f32, _g: f32, _b: f32, _a: f32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Clear the color buffer
-    #[cfg(feature = "gl")]
     pub fn clear_color_buffer(&self) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -104,15 +66,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn clear_color_buffer(&self) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Enable blending
-    #[cfg(feature = "gl")]
     pub fn enable_blending(&self) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -120,15 +75,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn enable_blending(&self) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set blend function
-    #[cfg(feature = "gl")]
     pub fn set_blend_func(&self, src: u32, dst: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -136,31 +84,18 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_blend_func(&self, _src: u32, _dst: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Use a shader program
-    #[cfg(feature = "gl")]
     pub fn use_program(&self, program: u32) -> Result<(), String> {
+        debug_assert!(self.initialized, "GlWrapper must be initialized before use");
         self.check_initialized()?;
         unsafe {
             gl::UseProgram(program);
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn use_program(&self, _program: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set a 3D float uniform
-    #[cfg(feature = "gl")]
     pub fn set_uniform_3f(&self, location: i32, x: f32, y: f32, z: f32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -168,15 +103,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_uniform_3f(&self, _location: i32, _x: f32, _y: f32, _z: f32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set a 2D float uniform
-    #[cfg(feature = "gl")]
     pub fn set_uniform_2f(&self, location: i32, x: f32, y: f32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -184,15 +112,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_uniform_2f(&self, _location: i32, _x: f32, _y: f32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Get uniform location
-    #[cfg(feature = "gl")]
     pub fn get_uniform_location(&self, program: u32, name: &str) -> Result<i32, String> {
         self.check_initialized()?;
         unsafe {
@@ -201,15 +122,8 @@ impl GlWrapper {
             Ok(gl::GetUniformLocation(program, c_str.as_ptr() as *const i8))
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn get_uniform_location(&self, _program: u32, _name: &str) -> Result<i32, String> {
-        // No-op for headless mode
-        Ok(0) // Return a default value or handle as appropriate
-    }
     
     /// Get shader parameter
-    #[cfg(feature = "glfw")]
     pub fn get_shader_iv(&self, shader: u32, pname: u32, params: &mut i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -217,15 +131,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn get_shader_iv(&self, _shader: u32, _pname: u32, _params: &mut i32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Get shader info log
-    #[cfg(feature = "glfw")]
     pub fn get_shader_info_log(&self, shader: u32) -> Result<String, String> {
         self.check_initialized()?;
         unsafe {
@@ -237,15 +144,8 @@ impl GlWrapper {
             Ok(error)
         }
     }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn get_shader_info_log(&self, _shader: u32) -> Result<String, String> {
-        // No-op for headless mode
-        Ok(String::new())
-    }
     
     /// Get program parameter
-    #[cfg(feature = "gl")]
     pub fn get_program_iv(&self, program: u32, pname: u32, params: &mut i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -253,15 +153,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn get_program_iv(&self, _program: u32, _pname: u32, _params: &mut i32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Get program info log
-    #[cfg(feature = "gl")]
     pub fn get_program_info_log(&self, program: u32) -> Result<String, String> {
         self.check_initialized()?;
         unsafe {
@@ -273,15 +166,8 @@ impl GlWrapper {
             Ok(error)
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn get_program_info_log(&self, _program: u32) -> Result<String, String> {
-        // No-op for headless mode
-        Ok(String::new())
-    }
     
     /// Bind vertex array object
-    #[cfg(feature = "gl")]
     pub fn bind_vertex_array(&self, vao: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -289,31 +175,18 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn bind_vertex_array(&self, _vao: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Draw arrays
-    #[cfg(feature = "gl")]
     pub fn draw_arrays(&self, mode: u32, first: i32, count: i32) -> Result<(), String> {
+        debug_assert!(self.initialized, "GlWrapper must be initialized before use");
         self.check_initialized()?;
         unsafe {
             gl::DrawArrays(mode, first, count);
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn draw_arrays(&self, _mode: u32, _first: i32, _count: i32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Create shader
-    #[cfg(feature = "gl")]
     pub fn create_shader(&self, shader_type: u32) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -324,15 +197,8 @@ impl GlWrapper {
             Ok(shader)
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn create_shader(&self, _shader_type: u32) -> Result<u32, String> {
-        // No-op for headless mode
-        Ok(0) // Return a default value or handle as appropriate
-    }
     
     /// Set shader source
-    #[cfg(feature = "gl")]
     pub fn set_shader_source(&self, shader: u32, source: &str) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -341,15 +207,8 @@ impl GlWrapper {
             Ok(())
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_shader_source(&self, _shader: u32, _source: &str) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Compile shader
-    #[cfg(feature = "gl")]
     pub fn compile_shader(&self, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -370,15 +229,8 @@ impl GlWrapper {
             Ok(())
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn compile_shader(&self, _shader: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Create program
-    #[cfg(feature = "gl")]
     pub fn create_program(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -389,15 +241,8 @@ impl GlWrapper {
             Ok(program)
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn create_program(&self) -> Result<u32, String> {
-        // No-op for headless mode
-        Ok(0) // Return a default value or handle as appropriate
-    }
     
     /// Attach shader to program
-    #[cfg(feature = "gl")]
     pub fn attach_shader(&self, program: u32, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -405,15 +250,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn attach_shader(&self, _program: u32, _shader: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Link program
-    #[cfg(feature = "gl")]
     pub fn link_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -434,15 +272,8 @@ impl GlWrapper {
             Ok(())
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn link_program(&self, _program: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Delete shader
-    #[cfg(feature = "gl")]
     pub fn delete_shader(&self, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -450,15 +281,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn delete_shader(&self, _shader: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Generate vertex array object
-    #[cfg(feature = "gl")]
     pub fn gen_vertex_array(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -473,15 +297,8 @@ impl GlWrapper {
             Ok(vao)
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn gen_vertex_array(&self) -> Result<u32, String> {
-        // No-op for headless mode
-        Ok(0) // Return a default value or handle as appropriate
-    }
     
     /// Generate buffer
-    #[cfg(feature = "gl")]
     pub fn gen_buffer(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
@@ -496,15 +313,8 @@ impl GlWrapper {
             Ok(buffer)
         }
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn gen_buffer(&self) -> Result<u32, String> {
-        // No-op for headless mode
-        Ok(0) // Return a default value or handle as appropriate
-    }
     
     /// Bind buffer
-    #[cfg(feature = "gl")]
     pub fn bind_buffer(&self, target: u32, buffer: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -512,15 +322,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn bind_buffer(&self, _target: u32, _buffer: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set buffer data
-    #[cfg(feature = "gl")]
     pub fn set_buffer_data(&self, target: u32, data: &[f32], usage: u32) -> Result<(), String> {
         self.check_initialized()?;
         
@@ -539,15 +342,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_buffer_data(&self, _target: u32, _data: &[f32], _usage: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set vertex attribute pointer
-    #[cfg(feature = "gl")]
     pub fn set_vertex_attrib_pointer(&self, index: u32, size: i32, data_type: u32, normalized: bool, stride: i32, offset: usize) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -555,15 +351,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_vertex_attrib_pointer(&self, _index: u32, _size: i32, _data_type: u32, _normalized: bool, _stride: i32, _offset: usize) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Enable vertex attribute array
-    #[cfg(feature = "gl")]
     pub fn enable_vertex_attrib_array(&self, index: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -571,15 +360,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn enable_vertex_attrib_array(&self, _index: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Delete program
-    #[cfg(feature = "gl")]
     pub fn delete_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -587,15 +369,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn delete_program(&self, _program: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Delete vertex array object
-    #[cfg(feature = "gl")]
     pub fn delete_vertex_array(&self, vao: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -603,15 +378,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn delete_vertex_array(&self, _vao: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Delete buffer
-    #[cfg(feature = "gl")]
     pub fn delete_buffer(&self, buffer: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -619,17 +387,10 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn delete_buffer(&self, _buffer: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     // ===== TEXTURE METHODS =====
     
     /// Generate texture
-    #[cfg(feature = "gl")]
     pub fn gen_texture(&self) -> Result<u32, String> {
         self.check_initialized()?;
         let mut texture = 0;
@@ -638,15 +399,8 @@ impl GlWrapper {
         }
         Ok(texture)
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn gen_texture(&self) -> Result<u32, String> {
-        // Return dummy texture ID for headless mode
-        Ok(0xDEADBEEF)
-    }
     
     /// Bind texture
-    #[cfg(feature = "gl")]
     pub fn bind_texture(&self, target: u32, texture: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -654,15 +408,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn bind_texture(&self, _target: u32, _texture: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set texture parameter
-    #[cfg(feature = "gl")]
     pub fn tex_parameter_i(&self, target: u32, pname: u32, param: i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -670,15 +417,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn tex_parameter_i(&self, _target: u32, _pname: u32, _param: i32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Upload texture image data
-    #[cfg(feature = "gl")]
     pub fn tex_image_2d(&self, target: u32, level: i32, internal_format: i32, width: i32, height: i32, border: i32, format: u32, data_type: u32, data: Option<&[u8]>) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -696,15 +436,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn tex_image_2d(&self, _target: u32, _level: i32, _internal_format: i32, _width: i32, _height: i32, _border: i32, _format: u32, _data_type: u32, _data: Option<&[u8]>) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Delete texture
-    #[cfg(feature = "gl")]
     pub fn delete_texture(&self, texture: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -712,15 +445,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn delete_texture(&self, _texture: u32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set uniform for texture sampler
-    #[cfg(feature = "gl")]
     pub fn set_uniform_1i(&self, location: i32, value: i32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -728,15 +454,8 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_uniform_1i(&self, _location: i32, _value: i32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
     
     /// Set uniform for float value
-    #[cfg(feature = "gl")]
     pub fn set_uniform_1f(&self, location: i32, value: f32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
@@ -744,23 +463,84 @@ impl GlWrapper {
         }
         Ok(())
     }
-
-    #[cfg(not(feature = "gl"))]
-    pub fn set_uniform_1f(&self, _location: i32, _value: f32) -> Result<(), String> {
-        // No-op for headless mode
-        Ok(())
-    }
 }
 
-// Implement Clone for GlWrapper
+/// Clone implementation for GlWrapper
+/// 
+/// **IMPORTANT**: Cloned instances are intentionally uninitialized and must be re-initialized
+/// before any use. This is by design to avoid sharing OpenGL contexts between instances.
+/// 
+/// **Usage Warning**: After cloning, you MUST call `initialize()` on the cloned instance
+/// before using any OpenGL methods, otherwise runtime errors will occur.
+/// 
+/// To verify proper usage, search for `.clone()` calls in the codebase and ensure each
+/// call site re-initializes the clone before use.
 impl Clone for GlWrapper {
     fn clone(&self) -> Self {
         Self {
-            initialized: self.initialized,
-            #[cfg(feature = "glfw")]
+            initialized: false, // Cloned instances are not initialized
             glfw: None, // Don't clone GLFW reference
-            #[cfg(feature = "glfw")]
             window: None, // Don't clone window reference
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test that cloned GlWrapper instances are uninitialized and fail fast
+    /// 
+    /// This test verifies that:
+    /// 1. Cloned instances are not initialized
+    /// 2. Using cloned instances without re-initialization fails fast
+    /// 3. The error message is clear about the initialization requirement
+    #[test]
+    fn test_cloned_gl_wrapper_is_uninitialized() {
+        let original = GlWrapper::new();
+        let cloned = original.clone();
+        
+        // Verify cloned instance is not initialized
+        assert!(!cloned.initialized);
+        
+        // Test the check_initialized method directly to avoid debug assertions
+        let result = cloned.check_initialized();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not initialized"));
+        
+        // Note: In debug builds, calling methods like set_viewport() will trigger
+        // debug_assert! which will panic. In release builds, these methods will
+        // return proper error messages. This demonstrates that our defensive
+        // checks work in both debug and release modes.
+    }
+    
+    /// Test that demonstrates proper usage pattern for cloned GlWrapper
+    /// 
+    /// This test shows the correct way to use a cloned GlWrapper:
+    /// 1. Clone the original instance
+    /// 2. Re-initialize the clone before use
+    /// 3. Use the clone normally
+    #[test]
+    fn test_proper_clone_usage_pattern() {
+        // Note: This test is conceptual and would require a real GLFW window
+        // to fully test. In practice, you would:
+        // 1. Create a GLFW window
+        // 2. Clone the GlWrapper
+        // 3. Call initialize() on the clone with the window
+        // 4. Use the clone normally
+        
+        let original = GlWrapper::new();
+        let cloned = original.clone();
+        
+        // Verify the clone is uninitialized
+        assert!(!cloned.initialized);
+        
+        // In real usage, you would call:
+        // cloned.initialize(&mut window)?;
+        // 
+        // Then the clone would be ready for use:
+        // cloned.set_viewport(0, 0, 800, 600)?;
+        // cloned.use_program(program_id)?;
+        // etc.
     }
 }

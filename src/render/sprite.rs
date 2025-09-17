@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use super::gl_wrapper::GlWrapper;
 use super::texture::{TextureManager, TextureId};
 use glam::Vec2;
@@ -69,7 +70,7 @@ impl Sprite {
 
 /// Sprite renderer that handles rendering sprites with textures
 pub struct SpriteRenderer {
-    gl: GlWrapper,
+    gl: Rc<GlWrapper>,
     texture_manager: Option<TextureManager>,
     sprite_shader: Option<u32>,
     sprite_vao: Option<u32>,
@@ -79,7 +80,7 @@ pub struct SpriteRenderer {
 
 impl SpriteRenderer {
     /// Create a new sprite renderer
-    pub fn new(gl: GlWrapper) -> Self {
+    pub fn new(gl: Rc<GlWrapper>) -> Self {
         Self {
             gl,
             texture_manager: None,
@@ -97,7 +98,7 @@ impl SpriteRenderer {
         }
 
         // Create texture manager
-        self.texture_manager = Some(TextureManager::new(self.gl.clone()));
+        self.texture_manager = Some(TextureManager::new(Rc::clone(&self.gl)));
 
         // Create sprite shader
         let sprite_shader = Self::create_sprite_shader(&self.gl)?;
@@ -152,16 +153,12 @@ impl SpriteRenderer {
 
         // Draw the sprite
         self.gl.bind_vertex_array(vao)?;
-        #[cfg(feature = "gl")]
         self.gl.draw_arrays(gl::TRIANGLE_STRIP, 0, 4)?;
-        #[cfg(not(feature = "gl"))]
-        self.gl.draw_arrays(0, 0, 4)?; // Dummy values for headless
 
         Ok(())
     }
 
     /// Create sprite shader program
-    #[cfg(feature = "gl")]
     fn create_sprite_shader(gl: &GlWrapper) -> Result<u32, String> {
         let vertex_shader_source = include_str!("shaders/sprite.vert");
         let fragment_shader_source = include_str!("shaders/sprite.frag");
@@ -215,14 +212,8 @@ impl SpriteRenderer {
         Ok(shader_program)
     }
 
-    #[cfg(not(feature = "gl"))]
-    fn create_sprite_shader(_gl: &GlWrapper) -> Result<u32, String> {
-        // Return dummy shader ID for headless mode
-        Ok(0xCAFEBABE)
-    }
 
     /// Create sprite geometry (quad with texture coordinates)
-    #[cfg(feature = "gl")]
     fn create_sprite_geometry(gl: &GlWrapper) -> Result<(u32, u32), String> {
         // Vertices: position (x, y) + texture coordinates (u, v)
         let vertices: [f32; 16] = [
@@ -254,11 +245,6 @@ impl SpriteRenderer {
         Ok((vao, vbo))
     }
 
-    #[cfg(not(feature = "gl"))]
-    fn create_sprite_geometry(_gl: &GlWrapper) -> Result<(u32, u32), String> {
-        // Return dummy VAO and VBO IDs for headless mode
-        Ok((0xDEADBEEF, 0xBABECAFE))
-    }
 
     /// Cleanup resources
     pub fn cleanup(&mut self) {

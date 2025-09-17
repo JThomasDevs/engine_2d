@@ -43,38 +43,30 @@
 // - All unsafe OpenGL code is contained in safe wrappers
 // - Plan for WebAssembly support in future
 
-#[cfg(feature = "glfw")]
 use glfw::{Glfw, Context, WindowMode, WindowHint};
 use super::config::EngineConfig;
 use crate::render::gl_wrapper::GlWrapper;
+use crate::events::event_system::EventSystem;
+use crate::events::event_types::RenderEvent;
+use std::time::Instant;
 
 // Common event enum that works across all feature configurations
 #[derive(Debug, Clone)]
 pub enum WindowEvent {
-    #[cfg(feature = "glfw")]
     Glfw(glfw::WindowEvent),
-    #[cfg(not(feature = "glfw"))]
-    Noop,
 }
 
-#[cfg(feature = "glfw")]
 pub struct WindowManager {
     pub glfw: Glfw,
     pub window: glfw::PWindow,
     pub events: glfw::GlfwReceiver<(f64, glfw::WindowEvent)>,
     pub should_close: bool,
     pub title: String,
-}
-
-#[cfg(not(feature = "glfw"))]
-pub struct WindowManager {
-    pub should_close: bool,
-    pub title: String,
+    pub event_system: Option<EventSystem>,
 }
 
 impl WindowManager {
-    #[cfg(feature = "glfw")]
-    pub fn new(config: &EngineConfig, gl_wrapper: &mut GlWrapper) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(config: &EngineConfig, gl_wrapper: &mut GlWrapper, event_system: Option<EventSystem>) -> Result<Self, Box<dyn std::error::Error>> {
         println!("Creating window: {}x{}", config.window_width, config.window_height);
         println!("Window title: {}", config.window_title);
         
@@ -119,82 +111,42 @@ impl WindowManager {
             events,
             should_close: false,
             title: config.window_title.clone(),
+            event_system,
         })
     }
 
-    #[cfg(not(feature = "glfw"))]
-    pub fn new(config: &EngineConfig, _gl_wrapper: &mut GlWrapper) -> Result<Self, Box<dyn std::error::Error>> {
-        println!("Creating headless window manager for: {}", config.window_title);
-        
-        Ok(Self {
-            should_close: false,
-            title: config.window_title.clone(),
-        })
-    }
     
     pub fn request_close(&mut self) {
         self.should_close = true;
     }
     
-    #[cfg(feature = "glfw")]
     pub fn should_close(&self) -> bool {
         self.should_close || self.window.should_close()
     }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn should_close(&self) -> bool {
-        self.should_close
-    }
     
-    #[cfg(feature = "glfw")]
     pub fn get_size(&self) -> (u32, u32) {
         let (width, height) = self.window.get_framebuffer_size();
         (width as u32, height as u32)
-    }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn get_size(&self) -> (u32, u32) {
-        // Return default size for headless mode
-        (800, 600)
     }
     
     pub fn get_title(&self) -> String {
         self.title.clone()
     }
     
-    #[cfg(feature = "glfw")]
     pub fn set_title(&mut self, title: &str) {
         self.title = title.to_string();
         self.window.set_title(title);
     }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn set_title(&mut self, title: &str) {
-        self.title = title.to_string();
-    }
     
-    #[cfg(feature = "glfw")]
     pub fn poll_events(&mut self) {
         // Use poll_events for non-blocking event processing
         self.glfw.poll_events();
     }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn poll_events(&mut self) {
-        // No-op for headless mode
-    }
     
-    #[cfg(feature = "glfw")]
     pub fn swap_buffers(&mut self) {
         self.window.swap_buffers();
     }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn swap_buffers(&mut self) {
-        // No-op for headless mode
-    }
     
-    #[cfg(feature = "glfw")]
     pub fn process_events<F>(&mut self, mut callback: F)
     where
         F: FnMut(&WindowEvent) -> bool,
@@ -205,8 +157,17 @@ impl WindowManager {
                     self.should_close = true;
                 }
                 glfw::WindowEvent::FramebufferSize(width, height) => {
-                    // Handle window resize - update viewport
-                    // TODO: Send viewport update event to render system
+                    // Handle window resize - send viewport update event to render system
+                    if let Some(ref event_system) = self.event_system {
+                        let viewport_event = RenderEvent::ViewportUpdated {
+                            width,
+                            height,
+                            timestamp: Instant::now(),
+                        };
+                        if let Err(e) = event_system.send_render_event(viewport_event) {
+                            eprintln!("Failed to send viewport update event: {}", e);
+                        }
+                    }
                     println!("Window resized to {}x{}", width, height);
                 }
                 glfw::WindowEvent::Size(width, height) => {
@@ -220,14 +181,6 @@ impl WindowManager {
                 }
             }
         }
-    }
-
-    #[cfg(not(feature = "glfw"))]
-    pub fn process_events<F>(&mut self, _callback: F)
-    where
-        F: FnMut(&WindowEvent) -> bool,
-    {
-        // No-op for headless mode
     }
     
 }

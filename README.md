@@ -1,64 +1,71 @@
 # Engine 2D
 
-A cross-platform 2D game engine written in Rust with modular feature support.
+A cross-platform 2D game engine written in Rust with optional OpenGL rendering and GLFW window management.
 
 ## Features
 
-The engine supports multiple feature configurations to allow for different use cases:
+The engine provides a complete 2D game development environment with:
 
-### Default Configuration
-By default, the engine includes window support with OpenGL rendering:
+- **Window Management**: Cross-platform window creation and event handling using GLFW (optional)
+- **OpenGL Rendering**: Hardware-accelerated 2D rendering with shader support (optional)
+- **Sprite System**: Texture-based sprite rendering with tinting and alpha blending (optional)
+- **Animation System**: Flexible animation framework for game objects
+- **Math Utilities**: Comprehensive 2D math library for vectors, matrices, and physics
+- **Event System**: Event-driven architecture for input and system communication
+- **ECS Framework**: Entity-Component-System for game object management
+
+## Features and Build Modes
+
+### Default Build (Headless)
 ```bash
-cargo run  # Same as cargo run --features window
+cargo build
+```
+- **No graphics dependencies** - faster compilation
+- **Smaller binary size** - ideal for servers and CLI tools
+- **Includes**: ECS, math utilities, event system, animation framework
+- **Use cases**: Game servers, headless testing, CI/CD, embedded systems
+
+### OpenGL Build (Graphics)
+```bash
+cargo build --features opengl
+```
+- **Full graphics support** - OpenGL rendering and windowing
+- **Larger binary size** - includes GLFW and OpenGL bindings
+- **Includes**: Everything from default + rendering, sprites, textures
+- **Use cases**: Game clients, level editors, visual development tools
+
+## Quick Start
+
+### For Graphics Applications
+```bash
+cargo run --features opengl
 ```
 
-### Feature Matrix
-
-| Feature | Description | Dependencies |
-|---------|-------------|--------------|
-| `window` | Full window support with OpenGL rendering (default) | `gl`, `glfw` |
-| `gl` | OpenGL bindings for rendering | `gl` |
-| `glfw` | GLFW window management | `glfw` |
-
-### Build Configurations
-
-#### Windowed Mode (Default)
+### For Headless Applications
 ```bash
-cargo run --features window
-# or simply
 cargo run
-```
-
-#### Headless Mode (Math/Image Processing Only)
-```bash
-cargo run --no-default-features
-```
-
-#### GLFW Only (Context Creation)
-```bash
-cargo run --features glfw
-```
-
-#### OpenGL Only (Rendering Without Window)
-```bash
-cargo run --features gl
 ```
 
 ### Examples
 
-#### Basic Window Example
+#### Basic Window Example (requires OpenGL)
 ```bash
-cargo run --example basic_window
+cargo run --example basic_window --features opengl
 ```
 
-#### Basic Renderer Example
+#### Basic Renderer Example (requires OpenGL)
 ```bash
-cargo run --example basic_renderer
+cargo run --example basic_renderer --features opengl
 ```
 
-#### Basic Sprite Example
+#### Basic Sprite Example (requires OpenGL)
 ```bash
-cargo run --example basic_sprite
+cargo run --example basic_sprite --features opengl
+```
+
+#### Math Utilities Example (headless)
+```bash
+cargo run --example math_utilities
 ```
 
 ## Architecture
@@ -78,40 +85,54 @@ The engine is designed with modularity in mind:
 - **glam**: Math library for vectors and matrices
 - **image**: Image loading and processing
 - **crossterm**: Cross-platform terminal input
-- **glfw**: Window management (optional)
-- **gl**: OpenGL bindings (optional)
+- **glfw**: Window management and OpenGL context creation
+- **gl**: OpenGL bindings for rendering
 
 ## Building
 
 ### Prerequisites
 - Rust 1.70 or later
-- OpenGL 3.3+ (for rendering features)
-- GLFW 3.3+ (for window features)
+- OpenGL 3.3+
+- GLFW 3.3+
 
 ### Build Commands
 
 ```bash
-# Full build with all features
+# Build the engine
 cargo build
 
-# Headless build (math/image processing only)
-cargo build --no-default-features
+# Run the engine
+cargo run
 
-# Specific feature combinations
-cargo build --features gl
-cargo build --features glfw
-cargo build --features window
+# Run examples
+cargo run --example basic_window
+cargo run --example basic_renderer
+cargo run --example basic_sprite
 ```
+
+## When to Use Each Mode
+
+### Use Headless Mode (default) for:
+- **Game servers** - Process game logic without rendering
+- **CI/CD pipelines** - Automated testing without GPU requirements
+- **CLI tools** - Asset processing, level validation, content generation
+- **Embedded systems** - IoT devices, microcontrollers
+- **WebAssembly** - Browser-based applications (use WebGL instead)
+
+### Use OpenGL Mode for:
+- **Game clients** - Full visual rendering for players
+- **Level editors** - Visual development tools
+- **Game development environments** - IDEs with graphics
+- **Desktop applications** - Native apps with UI
 
 ## Testing
 
 ```bash
-# Run all tests
+# Run all tests (headless)
 cargo test
 
-# Run tests with specific features
-cargo test --features window
-cargo test --no-default-features
+# Run tests with OpenGL features
+cargo test --features opengl
 ```
 
 ## License

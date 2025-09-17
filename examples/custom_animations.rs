@@ -1,27 +1,45 @@
 use engine_2d::engine::{Engine, EngineConfig};
 use engine_2d::animation::Animation;
 use engine_2d::render::sprite::{Sprite, SpriteRenderer};
+use engine_2d::render::texture::TextureId;
 use glam::Vec2;
 
 /// Circular animation - sprites move in circular patterns
 struct CircularAnimation {
     name: String,
+    red_texture_id: Option<TextureId>,
 }
 
 impl CircularAnimation {
     fn new() -> Self {
         Self {
             name: "Circular Animation".to_string(),
+            red_texture_id: None,
         }
+    }
+    
+    fn initialize(&mut self, sprite_renderer: &mut SpriteRenderer) -> Result<(), String> {
+        if self.red_texture_id.is_none() {
+            self.red_texture_id = Some(sprite_renderer.texture_manager().create_color_texture(64, 64, (255, 0, 0, 255))?);
+        }
+        Ok(())
     }
 }
 
 impl Animation for CircularAnimation {
     fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
-        // Create color textures for the sprites
-        let red_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (255, 0, 0, 255)) {
-            Ok(id) => id,
-            Err(_) => return,
+        // Initialize texture if not already done
+        if let Err(e) = self.initialize(sprite_renderer) {
+            eprintln!("Failed to initialize red texture: {}", e);
+            return;
+        }
+        
+        let red_texture = match &self.red_texture_id {
+            Some(id) => *id,
+            None => {
+                eprintln!("Red texture not initialized");
+                return;
+            }
         };
         
         // Create sprites in circular motion
@@ -31,8 +49,8 @@ impl Animation for CircularAnimation {
             let y = (elapsed_time * 0.7 + offset).cos() * 0.2;
             
             let mut sprite = Sprite::new(red_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
-            if let Err(_) = sprite_renderer.render_sprite(&sprite) {
-                // Handle render error
+            if let Err(e) = sprite_renderer.render_sprite(&sprite) {
+                eprintln!("Failed to render sprite: {}", e);
             }
         }
     }
@@ -42,25 +60,49 @@ impl Animation for CircularAnimation {
     }
 }
 
+impl Drop for CircularAnimation {
+    fn drop(&mut self) {
+        // Note: We can't clean up textures here because we don't have access to the sprite_renderer
+        // The texture manager will clean up all textures when it's dropped
+    }
+}
+
 /// Bouncing animation - sprites bounce up and down
 struct BouncingAnimation {
     name: String,
+    green_texture_id: Option<TextureId>,
 }
 
 impl BouncingAnimation {
     fn new() -> Self {
         Self {
             name: "Bouncing Animation".to_string(),
+            green_texture_id: None,
         }
+    }
+    
+    fn initialize(&mut self, sprite_renderer: &mut SpriteRenderer) -> Result<(), String> {
+        if self.green_texture_id.is_none() {
+            self.green_texture_id = Some(sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 255, 0, 255))?);
+        }
+        Ok(())
     }
 }
 
 impl Animation for BouncingAnimation {
     fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
-        // Create color textures for the sprites
-        let green_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 255, 0, 255)) {
-            Ok(id) => id,
-            Err(_) => return,
+        // Initialize texture if not already done
+        if let Err(e) = self.initialize(sprite_renderer) {
+            eprintln!("Failed to initialize green texture: {}", e);
+            return;
+        }
+        
+        let green_texture = match &self.green_texture_id {
+            Some(id) => *id,
+            None => {
+                eprintln!("Green texture not initialized");
+                return;
+            }
         };
         
         // Create sprites in bouncing motion
@@ -71,8 +113,8 @@ impl Animation for BouncingAnimation {
             let y = bounce_height - 0.2; // Center the bounce
             
             let mut sprite = Sprite::new(green_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
-            if let Err(_) = sprite_renderer.render_sprite(&sprite) {
-                // Handle render error
+            if let Err(e) = sprite_renderer.render_sprite(&sprite) {
+                eprintln!("Failed to render sprite: {}", e);
             }
         }
     }
@@ -82,25 +124,49 @@ impl Animation for BouncingAnimation {
     }
 }
 
+impl Drop for BouncingAnimation {
+    fn drop(&mut self) {
+        // Note: We can't clean up textures here because we don't have access to the sprite_renderer
+        // The texture manager will clean up all textures when it's dropped
+    }
+}
+
 /// Spinning animation - sprites rotate around a center point
 struct SpinningAnimation {
     name: String,
+    blue_texture_id: Option<TextureId>,
 }
 
 impl SpinningAnimation {
     fn new() -> Self {
         Self {
             name: "Spinning Animation".to_string(),
+            blue_texture_id: None,
         }
+    }
+    
+    fn initialize(&mut self, sprite_renderer: &mut SpriteRenderer) -> Result<(), String> {
+        if self.blue_texture_id.is_none() {
+            self.blue_texture_id = Some(sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 0, 255, 255))?);
+        }
+        Ok(())
     }
 }
 
 impl Animation for SpinningAnimation {
     fn update(&mut self, sprite_renderer: &mut SpriteRenderer, elapsed_time: f32) {
-        // Create color textures for the sprites
-        let blue_texture = match sprite_renderer.texture_manager().create_color_texture(64, 64, (0, 0, 255, 255)) {
-            Ok(id) => id,
-            Err(_) => return,
+        // Initialize texture if not already done
+        if let Err(e) = self.initialize(sprite_renderer) {
+            eprintln!("Failed to initialize blue texture: {}", e);
+            return;
+        }
+        
+        let blue_texture = match &self.blue_texture_id {
+            Some(id) => *id,
+            None => {
+                eprintln!("Blue texture not initialized");
+                return;
+            }
         };
         
         // Create sprites in spinning motion
@@ -111,14 +177,21 @@ impl Animation for SpinningAnimation {
             let y = angle.sin() * radius;
             
             let mut sprite = Sprite::new(blue_texture, Vec2::new(x, y), Vec2::new(0.1, 0.1));
-            if let Err(_) = sprite_renderer.render_sprite(&sprite) {
-                // Handle render error
+            if let Err(e) = sprite_renderer.render_sprite(&sprite) {
+                eprintln!("Failed to render sprite: {}", e);
             }
         }
     }
     
     fn name(&self) -> &str {
         &self.name
+    }
+}
+
+impl Drop for SpinningAnimation {
+    fn drop(&mut self) {
+        // Note: We can't clean up textures here because we don't have access to the sprite_renderer
+        // The texture manager will clean up all textures when it's dropped
     }
 }
 

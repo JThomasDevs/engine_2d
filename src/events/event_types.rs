@@ -60,6 +60,7 @@ pub enum RenderEvent {
     DrawRectangle { x: f32, y: f32, width: f32, height: f32, color: (f32, f32, f32), timestamp: Instant },
     DrawSprite { x: f32, y: f32, texture_id: u32, timestamp: Instant },
     PresentFrame { timestamp: Instant },
+    ViewportUpdated { width: i32, height: i32, timestamp: Instant },
 }
 
 impl Event for RenderEvent {
@@ -69,6 +70,7 @@ impl Event for RenderEvent {
             RenderEvent::DrawRectangle { timestamp, .. } => *timestamp,
             RenderEvent::DrawSprite { timestamp, .. } => *timestamp,
             RenderEvent::PresentFrame { timestamp, .. } => *timestamp,
+            RenderEvent::ViewportUpdated { timestamp, .. } => *timestamp,
         }
     }
     
