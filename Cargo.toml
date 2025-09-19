@@ -28,6 +28,7 @@ env_logger = "0.10"
 
 # Cross-platform audio (optional)
 # rodio = "0.17"
+paste = "1.0"
 
 [features]
 default = []

@@ -467,7 +467,4 @@ impl GlWrapper {
 
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-}
+mod tests { }
