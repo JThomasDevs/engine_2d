@@ -42,12 +42,12 @@ impl KeyboardInput {
     
     /// Update keyboard input (call each frame)
     pub fn update(&mut self, delta_time: f32) {
-        // Store previous states
-        self.previous_key_states = self.key_states.clone();
+        // Store previous states using efficient move operation
+        self.previous_key_states = std::mem::take(&mut self.key_states);
         
         // Update key repeat times
         if self.repeat_enabled {
-            for (key, &pressed) in &self.key_states {
+            for (key, &pressed) in &self.previous_key_states {
                 if pressed {
                     let current_time = self.key_times.get(key).copied().unwrap_or(0.0);
                     self.key_times.insert(*key, current_time + delta_time);

@@ -144,14 +144,18 @@ impl Engine {
             // Process window events
             self.window_manager.poll_events();
             
-            // Handle keyboard input for quit
+            // Handle keyboard input for quit and forward other events to animation
             self.window_manager.process_events(|event| {
                 match event {
                     super::window::WindowEvent::Glfw(glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _)) |
                     super::window::WindowEvent::Glfw(glfw::WindowEvent::Key(Key::Q, _, Action::Press, _)) => {
                         false // Return false to close window
                     }
-                    _ => true, // Continue processing other events
+                    _ => {
+                        // Forward all other events to the animation
+                        self.animation.handle_event(event);
+                        true // Continue processing other events
+                    }
                 }
             });
             
@@ -161,7 +165,7 @@ impl Engine {
             }
             
             // Update animation (animation is responsible for creating and rendering sprites)
-            self.animation.update(Some(&mut self.sprite_renderer), self.elapsed_time);
+            self.animation.update(Some(&mut self.sprite_renderer), self.elapsed_time, self.delta_time.as_secs_f32());
             
             // Print success message once
             static PRINTED: std::sync::Once = std::sync::Once::new();
@@ -200,7 +204,7 @@ impl Engine {
             // Update animation (headless mode - no rendering)
             // Note: In headless mode, animations can still process game logic
             // but won't render anything
-            self.animation.update(self.elapsed_time);
+            self.animation.update(self.elapsed_time, delta_time.as_secs_f32());
             
             frame_count += 1;
             

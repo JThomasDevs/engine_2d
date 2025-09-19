@@ -61,11 +61,30 @@ impl InputManager {
         }
     }
     
+    /// Set raw input state (for keyboard/mouse events)
+    pub fn set_raw_input(&mut self, input: PhysicalInput, pressed: bool) {
+        self.raw_inputs.insert(input, pressed);
+    }
+    
+    /// Set raw input value (for analog inputs)
+    pub fn set_raw_value(&mut self, input: PhysicalInput, value: f32) {
+        self.raw_values.insert(input, value);
+    }
+    
     /// Update the input manager (call each frame)
     pub fn update(&mut self, _delta_time: f32) {
         // Update action states based on current raw inputs
-        for (action_id, action) in &self.actions.clone() {
-            self.update_action_state(action_id, action);
+        let action_ids: Vec<_> = self.actions.keys().cloned().collect();
+        for action_id in action_ids {
+            if let Some(action) = self.actions.get(&action_id) {
+                let current_state = self.action_states.get(&action_id).cloned().unwrap_or(InputState::Idle);
+                let new_state = self.calculate_action_state(action);
+                
+                // Update state if it changed
+                if current_state != new_state {
+                    self.action_states.insert(action_id, new_state);
+                }
+            }
         }
         
         // Generate events for state changes
@@ -74,17 +93,6 @@ impl InputManager {
         // Clean up old history
         if self.input_history.len() > self.max_history_size {
             self.input_history.drain(0..self.input_history.len() - self.max_history_size);
-        }
-    }
-    
-    /// Update the state of a specific action
-    fn update_action_state(&mut self, action_id: &str, action: &GameAction) {
-        let current_state = self.action_states.get(action_id).cloned().unwrap_or(InputState::Idle);
-        let new_state = self.calculate_action_state(action);
-        
-        // Update state if it changed
-        if current_state != new_state {
-            self.action_states.insert(action_id.to_string(), new_state);
         }
     }
     
@@ -314,29 +322,32 @@ impl InputManager {
     fn generate_action_events(&mut self) {
         let now = Instant::now();
         
-        for (action_id, state) in &self.action_states.clone() {
-            if let Some(action) = self.actions.get(action_id) {
-                let intensity = match action.input_type {
-                    InputType::Digital => {
-                        if matches!(state, InputState::Pressed | InputState::Held) { 1.0 } else { 0.0 }
-                    }
-                    InputType::Analog => self.get_action_value(action_id),
-                    InputType::Hybrid => {
-                        if matches!(state, InputState::Pressed | InputState::Held) {
-                            1.0
-                        } else {
-                            self.get_action_value(action_id)
+        let action_ids: Vec<_> = self.action_states.keys().cloned().collect();
+        for action_id in action_ids {
+            if let Some(state) = self.action_states.get(&action_id) {
+                if let Some(action) = self.actions.get(&action_id) {
+                    let intensity = match action.input_type {
+                        InputType::Digital => {
+                            if matches!(state, InputState::Pressed | InputState::Held) { 1.0 } else { 0.0 }
                         }
-                    }
-                };
-                
-                if intensity > 0.0 {
-                    let event = InputEvent::ActionTriggered {
-                        action_id: action_id.clone(),
-                        intensity,
-                        timestamp: now,
+                        InputType::Analog => self.get_action_value(&action_id),
+                        InputType::Hybrid => {
+                            if matches!(state, InputState::Pressed | InputState::Held) {
+                                1.0
+                            } else {
+                                self.get_action_value(&action_id)
+                            }
+                        }
                     };
-                    self.input_history.push(event);
+                    
+                    if intensity > 0.0 {
+                        let event = InputEvent::ActionTriggered {
+                            action_id: action_id.clone(),
+                            intensity,
+                            timestamp: now,
+                        };
+                        self.input_history.push(event);
+                    }
                 }
             }
         }

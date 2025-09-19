@@ -49,7 +49,7 @@ impl MouseInput {
     pub fn update(&mut self) {
         // Store previous states
         self.previous_position = self.position;
-        self.previous_button_states = self.button_states.clone();
+        self.previous_button_states = std::mem::take(&mut self.button_states);
         
         // Reset scroll delta (it's event-driven, not state-based)
         self.scroll_delta = (0.0, 0.0);

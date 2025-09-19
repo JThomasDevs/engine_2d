@@ -1,5 +1,7 @@
 #[cfg(feature = "opengl")]
 use crate::render::sprite::SpriteRenderer;
+#[cfg(feature = "opengl")]
+use crate::engine::window::WindowEvent;
 
 /// Trait for defining custom animations
 /// 
@@ -14,7 +16,17 @@ pub trait Animation {
     /// # Arguments
     /// * `sprite_renderer` - Optional access to sprite renderer for creating/rendering sprites (None in headless mode)
     /// * `elapsed_time` - Time in seconds since the animation started
-    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32);
+    /// * `delta_time` - Time in seconds since the last frame
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32);
+    
+    /// Handle input events
+    /// 
+    /// # Arguments
+    /// * `event` - Window event (keyboard, mouse, etc.)
+    fn handle_event(&mut self, event: &WindowEvent) {
+        // Default implementation does nothing
+        // Animations can override this to handle input
+    }
     
     /// Get the name of the animation (for debugging/logging purposes)
     fn name(&self) -> &str;
@@ -26,7 +38,8 @@ pub trait Animation {
     /// 
     /// # Arguments
     /// * `elapsed_time` - Time in seconds since the animation started
-    fn update(&mut self, elapsed_time: f32);
+    /// * `delta_time` - Time in seconds since the last frame
+    fn update(&mut self, elapsed_time: f32, delta_time: f32);
     
     /// Get the name of the animation (for debugging/logging purposes)
     fn name(&self) -> &str;
@@ -49,7 +62,7 @@ impl NoAnimation {
 
 #[cfg(feature = "opengl")]
 impl Animation for NoAnimation {
-    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, _elapsed_time: f32) {
+    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, _elapsed_time: f32, _delta_time: f32) {
         // Do nothing - no sprites are created or animated
     }
     
@@ -60,7 +73,7 @@ impl Animation for NoAnimation {
 
 #[cfg(not(feature = "opengl"))]
 impl Animation for NoAnimation {
-    fn update(&mut self, _elapsed_time: f32) {
+    fn update(&mut self, _elapsed_time: f32, _delta_time: f32) {
         // Do nothing - headless mode
     }
     
