@@ -112,7 +112,7 @@ impl SpriteMovementAnimation {
         Self {
             sprite,
             input_manager,
-            move_speed: 0.1, // units per second (normalized coordinates - 10% of screen per second)
+            move_speed: 0.5, // units per second
             texture_created: false,
         }
     }
