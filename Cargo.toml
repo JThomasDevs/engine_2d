@@ -65,3 +65,7 @@ required-features = ["opengl"]
 [[example]]
 name = "pendulum_animation"
 required-features = ["opengl"]
+
+[[example]]
+name = "advanced_window_demo"
+required-features = ["opengl"]

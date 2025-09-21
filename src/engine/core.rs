@@ -110,6 +110,11 @@ impl Engine {
         &self.window_manager
     }
     
+    #[cfg(feature = "opengl")]
+    pub fn get_window_manager_mut(&mut self) -> &mut WindowManager {
+        &mut self.window_manager
+    }
+    
     pub fn get_config(&self) -> &EngineConfig {
         &self.config
     }
@@ -165,7 +170,7 @@ impl Engine {
             }
             
             // Update animation (animation is responsible for creating and rendering sprites)
-            self.animation.update(Some(&mut self.sprite_renderer), self.elapsed_time, self.delta_time.as_secs_f32());
+            self.animation.update(Some(&mut self.sprite_renderer), self.elapsed_time, self.delta_time.as_secs_f32(), Some(&mut self.window_manager));
             
             // Print success message once
             static PRINTED: std::sync::Once = std::sync::Once::new();
