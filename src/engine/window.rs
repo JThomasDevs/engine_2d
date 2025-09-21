@@ -278,9 +278,11 @@ impl WindowManager {
     pub fn set_adaptive_vsync(&mut self, enabled: bool) -> Result<(), String> {
         if enabled {
             self.glfw.set_swap_interval(glfw::SwapInterval::Adaptive);
+            self.vsync_enabled = true; // Adaptive is still a form of VSync
             println!("Adaptive VSync enabled");
         } else {
             self.glfw.set_swap_interval(glfw::SwapInterval::None);
+            self.vsync_enabled = false;
             println!("Adaptive VSync disabled");
         }
         Ok(())
