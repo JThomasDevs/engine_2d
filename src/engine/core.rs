@@ -84,7 +84,7 @@ impl Engine {
         }
         
         // Create text renderer with the same shared GlWrapper
-        let mut text_renderer = SimpleTextRenderer::new(Rc::clone(&gl_wrapper_rc))?;
+        let mut text_renderer = SimpleTextRenderer::new(Rc::clone(&gl_wrapper_rc), config.fallback_font_path.clone())?;
         if let Err(e) = text_renderer.initialize() {
             return Err(format!("Failed to initialize text renderer: {}", e).into());
         }

@@ -9,6 +9,8 @@ pub struct EngineConfig {
     pub fullscreen: bool,
     /// Viewport configuration for text rendering
     pub viewport: ViewportConfig,
+    /// Fallback font path for text rendering when specified fonts are not found
+    pub fallback_font_path: String,
 }
 
 /// Configuration for the viewport coordinate system
@@ -88,6 +90,7 @@ impl Default for EngineConfig {
             vsync: true,
             fullscreen: false,
             viewport: ViewportConfig::default(),
+            fallback_font_path: "assets/fonts/default.ttf".to_string(),
         }
     }
 }
