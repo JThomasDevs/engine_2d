@@ -322,7 +322,7 @@ impl engine_2d::animation::Animation for AdvancedWindowDemo {
         }
     }
     
-    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32, window_manager: Option<&mut WindowManager>) {
+    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32, window_manager: Option<&mut WindowManager>, text_renderer: Option<&mut engine_2d::render::text::TextRenderer>) {
         // Update input
         self.input_manager.update(delta_time);
         
@@ -379,6 +379,31 @@ impl engine_2d::animation::Animation for AdvancedWindowDemo {
                 println!("A pressed - VSync Analysis:");
                 println!("{}", self.get_vsync_analysis());
                 println!("VSync Status: {}", if wm.is_vsync_enabled() { "ENABLED" } else { "DISABLED" });
+            }
+            
+            // Render some text on screen to demonstrate text rendering
+            if let Some(tr) = text_renderer {
+                // Load default font if not already loaded
+                if !tr.has_font("default") {
+                        if let Err(e) = tr.load_font("default", "assets/fonts/default.ttf", 64) {
+                        // Font loading failed, but that's okay for this demo
+                        println!("Note: Font loading failed: {}", e);
+                    }
+                }
+                
+                // Render some status text
+                if tr.has_font("default") {
+                    use engine_2d::render::text_utils::TextUtils;
+                    use glam::Vec2;
+                    
+                    let status_text = format!("VSync: {}", if wm.is_vsync_enabled() { "ON" } else { "OFF" });
+                    let text = TextUtils::info_text(&status_text, Vec2::new(0.02, 0.95), "default");
+                    let _ = tr.render_text(&text);
+                    
+                    let mode_text = format!("Mode: {:?}", wm.get_display_mode());
+                    let text2 = TextUtils::info_text(&mode_text, Vec2::new(0.02, 0.9), "default");
+                    let _ = tr.render_text(&text2);
+                }
             }
         }
     }

@@ -446,6 +446,15 @@ impl GlWrapper {
         Ok(())
     }
     
+    /// Generate mipmaps for the currently bound texture
+    pub fn generate_mipmap(&self, target: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::GenerateMipmap(target);
+        }
+        Ok(())
+    }
+    
     /// Set uniform for texture sampler
     pub fn set_uniform_1i(&self, location: i32, value: i32) -> Result<(), String> {
         self.check_initialized()?;
@@ -460,6 +469,24 @@ impl GlWrapper {
         self.check_initialized()?;
         unsafe {
             gl::Uniform1f(location, value);
+        }
+        Ok(())
+    }
+    
+    /// Set pixel store parameter
+    pub fn pixel_store_i(&self, pname: u32, param: i32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::PixelStorei(pname, param);
+        }
+        Ok(())
+    }
+    
+    /// Activate texture unit
+    pub fn active_texture(&self, texture: u32) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::ActiveTexture(texture);
         }
         Ok(())
     }

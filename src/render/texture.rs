@@ -94,6 +94,45 @@ impl TextureManager {
         Ok(texture_id)
     }
 
+    /// Create a texture from raw pixel data
+    pub fn create_texture_from_data(&mut self, width: u32, height: u32, data: &[u8]) -> Result<TextureId, String> {
+        // Generate OpenGL texture ID
+        let texture_id = self.gl.gen_texture()?;
+        self.gl.bind_texture(0x0DE1, texture_id)?; // GL_TEXTURE_2D
+        
+        // Set pixel alignment to 1 byte for any texture width
+        self.gl.pixel_store_i(0x0CF5, 1)?; // GL_UNPACK_ALIGNMENT, 1
+        
+        // Set texture parameters for high-quality font rendering
+        self.gl.tex_parameter_i(0x0DE1, 0x2800, 0x2703)?; // GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
+        self.gl.tex_parameter_i(0x0DE1, 0x2801, 0x2601)?; // GL_TEXTURE_MAG_FILTER, GL_LINEAR
+        self.gl.tex_parameter_i(0x0DE1, 0x2802, 0x812F)?; // GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE
+        self.gl.tex_parameter_i(0x0DE1, 0x2803, 0x812F)?; // GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE
+        
+        // Upload texture data
+        self.gl.tex_image_2d(
+            0x0DE1, 0, 0x1908, // GL_TEXTURE_2D, level, GL_RGBA
+            width as i32, height as i32, 0,
+            0x1908, 0x1401, // GL_RGBA, GL_UNSIGNED_BYTE
+            Some(data)
+        )?;
+        
+        // Generate mipmaps for better quality at different scales
+        self.gl.generate_mipmap(0x0DE1)?; // GL_TEXTURE_2D
+        
+        let texture_info = TextureInfo {
+            id: TextureId(texture_id),
+            width,
+            height,
+        };
+        
+        // Store with a unique name
+        let name = format!("data_texture_{}", texture_id);
+        self.textures.insert(name, texture_info.clone());
+        
+        Ok(texture_info.id)
+    }
+
     /// Create a solid color texture
     pub fn create_color_texture(&mut self, width: u32, height: u32, color: (u8, u8, u8, u8)) -> Result<TextureId, String> {
         // Create image data

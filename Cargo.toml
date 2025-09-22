@@ -19,6 +19,9 @@ glam = "0.25"
 # Cross-platform image loading
 image = { version = "0.24", optional = true }
 
+# Font loading and text rendering
+fontdue = { version = "0.7", optional = true }
+
 # Serialization support
 serde = { version = "1.0", features = ["derive"] }
 
@@ -32,7 +35,7 @@ paste = "1.0"
 
 [features]
 default = []
-opengl = ["glfw", "gl", "image"]
+opengl = ["glfw", "gl", "image", "fontdue"]
 
 [target.'cfg(windows)'.dependencies]
 # Windows-specific dependencies (if needed)
@@ -68,4 +71,12 @@ required-features = ["opengl"]
 
 [[example]]
 name = "advanced_window_demo"
+required-features = ["opengl"]
+
+[[example]]
+name = "text_rendering_demo"
+required-features = ["opengl"]
+
+[[example]]
+name = "simple_text_demo"
 required-features = ["opengl"]

@@ -1,5 +1,7 @@
 #[cfg(feature = "opengl")]
 use crate::render::sprite::SpriteRenderer;
+    #[cfg(feature = "opengl")]
+    use crate::render::simple_text::SimpleTextRenderer;
 #[cfg(feature = "opengl")]
 use crate::engine::window::{WindowEvent, WindowManager};
 
@@ -18,7 +20,8 @@ pub trait Animation {
     /// * `elapsed_time` - Time in seconds since the animation started
     /// * `delta_time` - Time in seconds since the last frame
     /// * `window_manager` - Optional access to window manager for window operations
-    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32, window_manager: Option<&mut WindowManager>);
+    /// * `text_renderer` - Optional access to text renderer for rendering text (None in headless mode)
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32, window_manager: Option<&mut WindowManager>, text_renderer: Option<&mut SimpleTextRenderer>);
     
     /// Handle input events
     /// 
@@ -72,8 +75,8 @@ impl NoAnimation {
 
 #[cfg(feature = "opengl")]
 impl Animation for NoAnimation {
-    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, _elapsed_time: f32, _delta_time: f32, _window_manager: Option<&mut WindowManager>) {
-        // Do nothing - no sprites are created or animated
+    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, _elapsed_time: f32, _delta_time: f32, _window_manager: Option<&mut WindowManager>, _text_renderer: Option<&mut SimpleTextRenderer>) {
+        // Do nothing - no sprites or text are created or animated
     }
     
     fn name(&self) -> &str {

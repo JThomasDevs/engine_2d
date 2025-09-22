@@ -4,7 +4,7 @@ pub mod window;
 pub mod config;
 
 pub use core::Engine;
-pub use config::EngineConfig;
+pub use config::{EngineConfig, ViewportConfig};
 
 #[cfg(test)]
 mod tests {
@@ -20,6 +20,10 @@ mod tests {
         assert_eq!(config.show_fps, false);
         assert_eq!(config.vsync, true);
         assert_eq!(config.fullscreen, false);
+        assert_eq!(config.viewport.logical_bounds, (-10.0, 10.0, -10.0, 10.0));
+        assert_eq!(config.viewport.text_height_fraction, 0.02);
+        assert_eq!(config.viewport.base_font_size, 16.0);
+        assert_eq!(config.viewport.viewport_independent_text, true);
     }
 
     #[test]
@@ -32,6 +36,7 @@ mod tests {
             show_fps: true,
             vsync: false,
             fullscreen: true,
+            viewport: ViewportConfig::ndc(), // Use NDC coordinates
         };
         
         assert_eq!(config.window_title, "Test Game");
@@ -41,6 +46,7 @@ mod tests {
         assert_eq!(config.show_fps, true);
         assert_eq!(config.vsync, false);
         assert_eq!(config.fullscreen, true);
+        assert_eq!(config.viewport.logical_bounds, (-1.0, 1.0, -1.0, 1.0));
     }
 
     #[test]
@@ -104,5 +110,45 @@ mod tests {
             assert_eq!(config.window_width, width);
             assert_eq!(config.window_height, height);
         }
+    }
+    
+    #[test]
+    fn test_viewport_config_defaults() {
+        let viewport = ViewportConfig::default();
+        assert_eq!(viewport.logical_bounds, (-10.0, 10.0, -10.0, 10.0));
+        assert_eq!(viewport.text_height_fraction, 0.02);
+        assert_eq!(viewport.base_font_size, 16.0);
+        assert_eq!(viewport.viewport_independent_text, true);
+    }
+    
+    #[test]
+    fn test_viewport_config_ndc() {
+        let viewport = ViewportConfig::ndc();
+        assert_eq!(viewport.logical_bounds, (-1.0, 1.0, -1.0, 1.0));
+        assert_eq!(viewport.text_height_fraction, 0.05);
+        assert_eq!(viewport.viewport_independent_text, true);
+    }
+    
+    #[test]
+    fn test_viewport_config_ui_based() {
+        let viewport = ViewportConfig::ui_based();
+        assert_eq!(viewport.logical_bounds, (0.0, 1.0, 0.0, 1.0));
+        assert_eq!(viewport.text_height_fraction, 0.05);
+        assert_eq!(viewport.viewport_independent_text, true);
+    }
+    
+    #[test]
+    fn test_viewport_config_pixel_based() {
+        let viewport = ViewportConfig::pixel_based(1920.0, 1080.0);
+        assert_eq!(viewport.logical_bounds, (0.0, 1920.0, 0.0, 1080.0));
+        assert_eq!(viewport.viewport_independent_text, false);
+    }
+    
+    #[test]
+    fn test_viewport_config_with_bounds() {
+        let viewport = ViewportConfig::with_bounds(-5.0, 5.0, -3.0, 3.0);
+        assert_eq!(viewport.logical_bounds, (-5.0, 5.0, -3.0, 3.0));
+        assert_eq!(viewport.text_height_fraction, 0.02);
+        assert_eq!(viewport.viewport_independent_text, true);
     }
 }
