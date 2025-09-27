@@ -10,6 +10,8 @@ use crate::events::event_system::EventSystem;
 use crate::render::renderer::Renderer;
 #[cfg(feature = "opengl")]
 use crate::render::sprite::SpriteRenderer;
+    #[cfg(feature = "opengl")]
+    use crate::render::simple_text::SimpleTextRenderer;
 #[cfg(feature = "opengl")]
 use crate::render::gl_wrapper::GlWrapper;
 use crate::animation::Animation;
@@ -39,6 +41,8 @@ pub struct Engine {
     renderer: Renderer,
     #[cfg(feature = "opengl")]
     sprite_renderer: SpriteRenderer,
+    #[cfg(feature = "opengl")]
+    text_renderer: SimpleTextRenderer,
     
     // Current animation
     animation: Box<dyn Animation>,
@@ -79,6 +83,29 @@ impl Engine {
             return Err(format!("Failed to initialize sprite renderer: {}", e).into());
         }
         
+        // Create text renderer with the same shared GlWrapper
+        let mut text_renderer = SimpleTextRenderer::new(Rc::clone(&gl_wrapper_rc), config.fallback_font_path.clone())?;
+        if let Err(e) = text_renderer.initialize() {
+            return Err(format!("Failed to initialize text renderer: {}", e).into());
+        }
+        
+        // Configure viewport for text rendering using the config
+        let viewport_config = &config.viewport;
+        text_renderer.viewport_mut().logical_bounds = viewport_config.logical_bounds;
+        
+        // Set text height fraction from config
+        if let Err(e) = text_renderer.viewport_mut().set_text_height_fraction(viewport_config.text_height_fraction) {
+            println!("Warning: Failed to set text height fraction: {}", e);
+        }
+        
+        // Set base font size from config
+        if let Err(e) = text_renderer.viewport_mut().set_base_font_size(viewport_config.base_font_size) {
+            println!("Warning: Failed to set base font size: {}", e);
+        }
+        
+        // Set viewport independence from config
+        text_renderer.set_viewport_independent_text(viewport_config.viewport_independent_text);
+        
         Ok(Self {
             is_running: false,
             delta_time: Duration::ZERO,
@@ -88,6 +115,7 @@ impl Engine {
             config,
             renderer,
             sprite_renderer,
+            text_renderer,
             animation,
         })
     }
@@ -108,6 +136,11 @@ impl Engine {
     #[cfg(feature = "opengl")]
     pub fn get_window_manager(&self) -> &WindowManager {
         &self.window_manager
+    }
+    
+    #[cfg(feature = "opengl")]
+    pub fn get_window_manager_mut(&mut self) -> &mut WindowManager {
+        &mut self.window_manager
     }
     
     pub fn get_config(&self) -> &EngineConfig {
@@ -164,8 +197,8 @@ impl Engine {
                 eprintln!("Renderer clear error: {}", e);
             }
             
-            // Update animation (animation is responsible for creating and rendering sprites)
-            self.animation.update(Some(&mut self.sprite_renderer), self.elapsed_time, self.delta_time.as_secs_f32());
+            // Update animation (animation is responsible for creating and rendering sprites and text)
+            self.animation.update(Some(&mut self.sprite_renderer), self.elapsed_time, self.delta_time.as_secs_f32(), Some(&mut self.window_manager), Some(&mut self.text_renderer));
             
             // Print success message once
             static PRINTED: std::sync::Once = std::sync::Once::new();
@@ -225,6 +258,18 @@ impl Engine {
     #[cfg(not(feature = "opengl"))]
     pub fn quit(&mut self) {
         self.is_running = false;
+    }
+    
+    /// Get a reference to the text renderer
+    #[cfg(feature = "opengl")]
+    pub fn text_renderer(&self) -> &SimpleTextRenderer {
+        &self.text_renderer
+    }
+    
+    /// Get a mutable reference to the text renderer
+    #[cfg(feature = "opengl")]
+    pub fn text_renderer_mut(&mut self) -> &mut SimpleTextRenderer {
+        &mut self.text_renderer
     }
 }
 
