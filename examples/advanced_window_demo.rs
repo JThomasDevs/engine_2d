@@ -393,16 +393,30 @@ impl engine_2d::animation::Animation for AdvancedWindowDemo {
                 
                 // Render some status text
                 if tr.has_font("default") {
-                    use engine_2d::render::text_utils::TextUtils;
+                    use engine_2d::render::simple_text_new::SimpleText;
                     use glam::Vec2;
                     
                     let status_text = format!("VSync: {}", if wm.is_vsync_enabled() { "ON" } else { "OFF" });
-                    let text = TextUtils::info_text(&status_text, Vec2::new(0.02, 0.95), "default");
-                    let _ = tr.render_text(&text);
+                    let text = SimpleText::new(status_text, 10)
+                        .color((0.2, 0.6, 1.0)) // Blue color like info_text
+                        .position(Vec2::new(0.02, 0.95));
+                    
+                    // Convert to old system for rendering
+                    let _ = tr.font("default")
+                        .size(text.font_size)
+                        .color(text.color.0, text.color.1, text.color.2)
+                        .draw(&text.content, text.position.x, text.position.y);
                     
                     let mode_text = format!("Mode: {:?}", wm.get_display_mode());
-                    let text2 = TextUtils::info_text(&mode_text, Vec2::new(0.02, 0.9), "default");
-                    let _ = tr.render_text(&text2);
+                    let text2 = SimpleText::new(mode_text, 10)
+                        .color((0.2, 0.6, 1.0)) // Blue color like info_text
+                        .position(Vec2::new(0.02, 0.9));
+                    
+                    // Convert to old system for rendering
+                    let _ = tr.font("default")
+                        .size(text2.font_size)
+                        .color(text2.color.0, text2.color.1, text2.color.2)
+                        .draw(&text2.content, text2.position.x, text2.position.y);
                 }
             }
         }
@@ -436,6 +450,8 @@ fn main() {
         show_fps: true,
         vsync: true,
         fullscreen: false,
+        viewport: engine_2d::engine::config::ViewportConfig::ui_based(),
+        fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
     
     let demo = AdvancedWindowDemo::new();

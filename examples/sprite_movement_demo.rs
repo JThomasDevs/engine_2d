@@ -3,14 +3,18 @@
 /// This example demonstrates the input system by allowing you to move a sprite
 /// around the screen using WASD or arrow keys.
 
-use engine_2d::engine::{Engine, EngineConfig};
+#[cfg(feature = "opengl")]
 use engine_2d::input::*;
+#[cfg(feature = "opengl")]
+use engine_2d::engine::{Engine, EngineConfig};
 #[cfg(feature = "opengl")]
 use engine_2d::render::sprite::{Sprite, SpriteRenderer};
 #[cfg(feature = "opengl")]
 use engine_2d::render::texture::TextureId;
 #[cfg(feature = "opengl")]
-use engine_2d::engine::window::WindowEvent;
+use engine_2d::engine::window::{WindowEvent, WindowManager};
+#[cfg(feature = "opengl")]
+use engine_2d::render::simple_text::SimpleTextRenderer;
 #[cfg(feature = "opengl")]
 use glam::Vec2;
 #[cfg(feature = "opengl")]
@@ -120,7 +124,7 @@ impl SpriteMovementAnimation {
 
 #[cfg(feature = "opengl")]
 impl engine_2d::animation::Animation for SpriteMovementAnimation {
-    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32, _window_manager: Option<&mut WindowManager>, _text_renderer: Option<&mut SimpleTextRenderer>) {
         // Initialize sprite renderer if we have one
         if let Some(renderer) = sprite_renderer {
             if !self.texture_created {
@@ -242,6 +246,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             show_fps: true,
             vsync: true,
             fullscreen: false,
+            viewport: engine_2d::engine::config::ViewportConfig::ui_based(),
+            fallback_font_path: "assets/fonts/default.ttf".to_string(),
         };
         
         // Create the animation

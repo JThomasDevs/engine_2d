@@ -23,6 +23,8 @@ fn test_engine_config_custom_values() {
         show_fps: true,
         vsync: false,
         fullscreen: true,
+        viewport: engine_2d::engine::config::ViewportConfig::default(),
+        fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
     
     assert_eq!(config.window_title, "My Game");

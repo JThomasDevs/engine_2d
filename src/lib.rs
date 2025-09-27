@@ -24,6 +24,8 @@ mod tests {
             show_fps: true,
             vsync: true,
             fullscreen: false,
+            viewport: crate::engine::ViewportConfig::default(),
+            fallback_font_path: "assets/fonts/default.ttf".to_string(),
         };
         
         // Test that we can create an animation

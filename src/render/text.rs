@@ -354,7 +354,7 @@ impl TextRenderer {
         // Calculate text width for alignment (use first line for alignment)
         let first_line = wrapped_content.lines().next().unwrap_or("");
         let text_width = self.calculate_text_width(first_line, font);
-        let scale_factor = self.viewport.calculate_scale_factor(font.size as f32);
+        let scale_factor = self.viewport.calculate_scale_factor(text.config.font_size as f32);
         
         let start_x = match text.config.align {
             TextAlign::Left => {
@@ -411,18 +411,18 @@ impl TextRenderer {
     }
 
     /// Render a single glyph
-    fn render_glyph(&self, glyph: &Glyph, position: Vec2, shader: u32, vao: u32, font_size: u32, scale_factor: f32) -> Result<(), String> {
-        // Use the scale factor passed from the main render loop (no duplicate calculation)
+    fn render_glyph(&self, glyph: &Glyph, position: Vec2, shader: u32, vao: u32, _font_size: u32, scale_factor: f32) -> Result<(), String> {
+        // Direct pixel scaling: use the scale factor directly without additional viewport scaling
         let scaled_size = Vec2::new(glyph.size.x * scale_factor, glyph.size.y * scale_factor);
         
         // Convert logical position to NDC coordinates
         let gl_position = self.viewport.logical_to_ndc(position);
         
-        // Scale the glyph size for NDC space
+        // Convert glyph size to NDC space using direct pixel-to-NDC conversion
         let (x_range, y_range) = self.viewport.get_logical_ranges();
         let gl_size = Vec2::new(
-            scaled_size.x * (2.0 / x_range),  // Scale width for NDC space
-            scaled_size.y * (2.0 / y_range)   // Scale height for NDC space
+            scaled_size.x * (2.0 / x_range),  // Convert pixel width to NDC
+            scaled_size.y * (2.0 / y_range)   // Convert pixel height to NDC
         );
         
         // Set glyph position and size

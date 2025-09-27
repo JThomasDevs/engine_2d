@@ -74,9 +74,5 @@ name = "advanced_window_demo"
 required-features = ["opengl"]
 
 [[example]]
-name = "text_rendering_demo"
-required-features = ["opengl"]
-
-[[example]]
 name = "simple_text_demo"
 required-features = ["opengl"]

@@ -3,7 +3,9 @@ use engine_2d::engine::{Engine, EngineConfig};
 #[cfg(feature = "opengl")]
 use engine_2d::input::*;
 #[cfg(feature = "opengl")]
-use engine_2d::render::simple_text::{SimpleText, SimpleTextRenderer, TextAnchor};
+use engine_2d::render::simple_text::SimpleText;
+#[cfg(feature = "opengl")]
+use engine_2d::render::simple_text::SimpleTextRenderer;
 #[cfg(feature = "opengl")]
 use engine_2d::animation::Animation;
 #[cfg(feature = "opengl")]
@@ -131,9 +133,10 @@ impl SimpleTextShowcase {
             last_action_states: HashMap::new(),
             current_demo: 0,
             demos: vec![
-                "Anchor Positioning",
+                "Basic Text",
                 "Font Sizes", 
                 "Colors",
+                "Positions",
                 "Fluent API",
             ],
             demo_texts: Vec::new(),
@@ -159,90 +162,78 @@ impl SimpleTextShowcase {
     fn setup_all_demo_texts(&mut self) {
         self.demo_texts.clear();
         
-        // Demo 1: Anchor-Based Positioning
+        // Demo 1: Basic Text
         self.demo_texts.push(vec![
-            SimpleText::new("Top Left".to_string(), 18)
-                .anchor(TextAnchor::TopLeft)
-                .position(Vec2::new(10.0, -60.0)), // Moved down to avoid title
-            SimpleText::new("Top Center".to_string(), 18)
-                .anchor(TextAnchor::TopCenter)
-                .position(Vec2::new(0.0, -60.0)), // Moved down to avoid title
-            SimpleText::new("Top Right".to_string(), 18)
-                .anchor(TextAnchor::TopRight)
-                .position(Vec2::new(-10.0, -60.0)), // Moved down to avoid title
-            SimpleText::new("Center".to_string(), 20)
-                .anchor(TextAnchor::MiddleCenter)
-                .position(Vec2::new(0.0, 0.0)), // Exactly center
-            SimpleText::new("Bottom Left".to_string(), 18)
-                .anchor(TextAnchor::BottomLeft)
-                .position(Vec2::new(10.0, 60.0)), // Moved up to avoid controls
-            SimpleText::new("Bottom Center".to_string(), 18)
-                .anchor(TextAnchor::BottomCenter)
-                .position(Vec2::new(0.0, 60.0)), // Moved up to avoid controls
-            SimpleText::new("Bottom Right".to_string(), 18)
-                .anchor(TextAnchor::BottomRight)
-                .position(Vec2::new(-10.0, 60.0)), // Moved up to avoid controls
+            SimpleText::new("Hello, World!".to_string(), 2)
+                .position(Vec2::new(0.0, 0.4)), // Center horizontally, above center vertically
+            SimpleText::new("This is basic text rendering".to_string(), 2)
+                .position(Vec2::new(0.0, 0.0)), // Center
+            SimpleText::new("No classifications, just text!".to_string(), 2)
+                .position(Vec2::new(0.0, -0.4)), // Center horizontally, below center vertically
         ]);
         
-        // Demo 2: Font Sizes with Anchors - More dramatic size differences
+        // Demo 2: Font Sizes
         self.demo_texts.push(vec![
-            SimpleText::new("Tiny Text".to_string(), 10)
-                .anchor(TextAnchor::MiddleLeft)
-                .position(Vec2::new(50.0, 80.0)), // Moved right to avoid clipping
-            SimpleText::new("Small Text".to_string(), 16)
-                .anchor(TextAnchor::MiddleLeft)
-                .position(Vec2::new(50.0, 40.0)), // Moved right to avoid clipping
-            SimpleText::new("Normal Text".to_string(), 24)
-                .anchor(TextAnchor::MiddleLeft)
-                .position(Vec2::new(50.0, 0.0)), // Moved right to avoid clipping
-            SimpleText::new("Large Text".to_string(), 36)
-                .anchor(TextAnchor::MiddleLeft)
-                .position(Vec2::new(50.0, -40.0)), // Moved right to avoid clipping
-            SimpleText::new("Huge Text".to_string(), 48)
-                .anchor(TextAnchor::MiddleLeft)
-                .position(Vec2::new(50.0, -80.0)), // Moved right to avoid clipping
+            SimpleText::new("Tiny Text".to_string(), 1)
+                .position(Vec2::new(-0.8, 0.6)),
+            SimpleText::new("Small Text".to_string(), 2)
+                .position(Vec2::new(-0.8, 0.2)),
+            SimpleText::new("Normal Text".to_string(), 3)
+                .position(Vec2::new(-0.8, -0.2)),
+            SimpleText::new("Large Text".to_string(), 4)
+                .position(Vec2::new(-0.8, -0.6)),
+            SimpleText::new("Huge Text".to_string(), 5)
+                .position(Vec2::new(-0.8, -0.8)),
         ]);
         
-        // Demo 3: Colors with Anchors
+        // Demo 3: Colors
         self.demo_texts.push(vec![
-            SimpleText::new("Red Text".to_string(), 16)
+            SimpleText::new("Red Text".to_string(), 2)
                 .color((1.0, 0.0, 0.0))
-                .anchor(TextAnchor::MiddleRight)
-                .position(Vec2::new(-50.0, 60.0)),
-            SimpleText::new("Green Text".to_string(), 16)
+                .position(Vec2::new(0.0, 0.6)),
+            SimpleText::new("Green Text".to_string(), 2)
                 .color((0.0, 1.0, 0.0))
-                .anchor(TextAnchor::MiddleRight)
-                .position(Vec2::new(-50.0, 20.0)),
-            SimpleText::new("Blue Text".to_string(), 16)
+                .position(Vec2::new(0.0, 0.3)),
+            SimpleText::new("Blue Text".to_string(), 2)
                 .color((0.0, 0.0, 1.0))
-                .anchor(TextAnchor::MiddleRight)
-                .position(Vec2::new(-50.0, -20.0)),
-            SimpleText::new("Yellow Text".to_string(), 16)
+                .position(Vec2::new(0.0, 0.0)),
+            SimpleText::new("Yellow Text".to_string(), 2)
                 .color((1.0, 1.0, 0.0))
-                .anchor(TextAnchor::MiddleRight)
-                .position(Vec2::new(-50.0, -60.0)),
-            SimpleText::new("Purple Text".to_string(), 16)
+                .position(Vec2::new(0.0, -0.3)),
+            SimpleText::new("Purple Text".to_string(), 2)
                 .color((1.0, 0.0, 1.0))
-                .anchor(TextAnchor::MiddleRight)
-                .position(Vec2::new(-50.0, -100.0)),
+                .position(Vec2::new(0.0, -0.6)),
         ]);
         
-        // Demo 4: Fluent API with Anchors
+        // Demo 4: Positions
         self.demo_texts.push(vec![
-            SimpleText::new("Fluent API Demo".to_string(), 18)
-                .color((1.0, 1.0, 0.0))
-                .anchor(TextAnchor::TopCenter)
-                .position(Vec2::new(0.0, -100.0)),
-            SimpleText::new("Method Chaining".to_string(), 16)
-                .color((0.0, 1.0, 1.0))
-                .anchor(TextAnchor::TopCenter)
-                .position(Vec2::new(0.0, -140.0)),
-            SimpleText::new("Clean & Simple".to_string(), 14)
-                .color((1.0, 0.5, 0.0))
-                .anchor(TextAnchor::TopCenter)
-                .position(Vec2::new(0.0, -180.0)),
+            SimpleText::new("Top Left".to_string(), 2)
+                .position(Vec2::new(-0.8, 0.8)),
+            SimpleText::new("Top Right".to_string(), 2)
+                .position(Vec2::new(0.8, 0.8)),
+            SimpleText::new("Center".to_string(), 2)
+                .position(Vec2::new(0.0, 0.0)),
+            SimpleText::new("Bottom Left".to_string(), 2)
+                .position(Vec2::new(-0.8, -0.8)),
+            SimpleText::new("Bottom Right".to_string(), 2)
+                .position(Vec2::new(0.8, -0.8)),
         ]);
         
+        // Demo 5: Fluent API
+        self.demo_texts.push(vec![
+            SimpleText::new("Fluent API Demo".to_string(), 2)
+                .color((1.0, 1.0, 0.0))
+                .position(Vec2::new(0.0, 0.6)),
+            SimpleText::new("Chain methods together".to_string(), 2)
+                .color((0.0, 1.0, 1.0))
+                .position(Vec2::new(0.0, 0.2)),
+            SimpleText::new("Simple and clean!".to_string(), 2)
+                .color((1.0, 0.5, 0.0))
+                .position(Vec2::new(0.0, -0.2)),
+            SimpleText::new("text.font(\"custom\").color((1,0,0)).size(20)".to_string(), 1)
+                .color((0.8, 0.8, 0.8))
+                .position(Vec2::new(0.0, -0.6)),
+        ]);
     }
     
 }
@@ -309,18 +300,15 @@ impl Animation for SimpleTextShowcase {
                 self.demos[self.current_demo]
             );
             
-            // Position demo title and controls to avoid overlap with demo content
-            let demo_text = SimpleText::new(demo_info, 14)
-                .anchor(TextAnchor::TopCenter)
-                .position(Vec2::new(0.0, -20.0))
-                .align(engine_2d::render::text::TextAlign::Center);
+            let demo_text = SimpleText::new(demo_info, 1)
+                .position(Vec2::new(-0.9, 0.9))
+                .align(engine_2d::render::text::TextAlign::Left);
             let _ = tr.render(&demo_text);
             
-            // Show controls using SimpleText - position at bottom center to avoid demo content
-            let controls_text = SimpleText::new("SPACE=Next | BACKSPACE=Prev | ESC=Exit".to_string(), 12)
-                .anchor(TextAnchor::BottomCenter)
-                .position(Vec2::new(0.0, 20.0))
-                .align(engine_2d::render::text::TextAlign::Center);
+            // Show controls using SimpleText
+            let controls_text = SimpleText::new("SPACE=Next | BACKSPACE=Prev | ESC=Exit".to_string(), 1)
+                .position(Vec2::new(-0.9, -0.9))
+                .align(engine_2d::render::text::TextAlign::Left);
             let _ = tr.render(&controls_text);
         }
     }
@@ -349,18 +337,18 @@ fn main() {
         show_fps: true,
         vsync: true,
         fullscreen: false,
-        viewport: engine_2d::engine::config::ViewportConfig::pixel_based(1024.0, 768.0),
+        viewport: engine_2d::engine::config::ViewportConfig::ndc(),
         fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
     
     let animation = SimpleTextShowcase::new();
     
     let mut engine = Engine::new_with_config_and_animation(config, Box::new(animation)).expect("Failed to create engine");
-            
-            if let Err(e) = engine.run() {
-                eprintln!("Engine error: {}", e);
-            }
-        }
+    
+    if let Err(e) = engine.run() {
+        eprintln!("Engine error: {}", e);
+    }
+}
 
 #[cfg(not(feature = "opengl"))]
 fn main() {

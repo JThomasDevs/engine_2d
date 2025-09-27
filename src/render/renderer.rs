@@ -52,6 +52,11 @@ impl Renderer {
         }
     }
     
+    /// Get a reference to the GlWrapper for viewport operations
+    pub fn gl(&self) -> &GlWrapper {
+        &self.gl
+    }
+    
     /// Initialize the renderer (call after OpenGL context is ready)
     pub fn initialize(&mut self) -> Result<(), String> {
         // The GlWrapper is already initialized in WindowManager

@@ -12,6 +12,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         show_fps: true, // Show FPS for this example
         vsync: true,
         fullscreen: false,
+        viewport: engine_2d::engine::config::ViewportConfig::ui_based(),
+        fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
     
     // Create and run the engine

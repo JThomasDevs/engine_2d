@@ -1,20 +1,6 @@
 use glam::Vec2;
 use crate::render::text::TextAlign;
 
-/// Text anchor points for positioning text relative to screen/viewport
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum TextAnchor {
-    TopLeft,
-    TopCenter,
-    TopRight,
-    MiddleLeft,
-    MiddleCenter,
-    MiddleRight,
-    BottomLeft,
-    BottomCenter,
-    BottomRight,
-}
-
 /// A simple, clean text object for basic text editor functionality
 #[derive(Debug, Clone)]
 pub struct SimpleText {
@@ -24,7 +10,6 @@ pub struct SimpleText {
     pub position: Vec2,
     pub color: (f32, f32, f32),
     pub align: TextAlign,
-    pub anchor: TextAnchor, // Anchor point for positioning
 }
 
 impl SimpleText {
@@ -37,7 +22,6 @@ impl SimpleText {
             position: Vec2::new(0.0, 0.0),
             color: (1.0, 1.0, 1.0), // White
             align: TextAlign::Center, // Default to center alignment
-            anchor: TextAnchor::MiddleCenter, // Default to center anchor
         }
     }
 
@@ -46,37 +30,31 @@ impl SimpleText {
         self.font_name = Some(font_name);
         self
     }
-    
+
     /// Set the text color (fluent method)
     pub fn color(mut self, color: (f32, f32, f32)) -> Self {
         self.color = color;
         self
     }
-    
+
     /// Set the position (fluent method)
     pub fn position(mut self, position: Vec2) -> Self {
         self.position = position;
         self
     }
-    
+
     /// Set the font size (fluent method)
     pub fn size(mut self, font_size: u32) -> Self {
         self.font_size = font_size;
         self
     }
-    
+
     /// Set the text alignment (fluent method)
     pub fn align(mut self, align: TextAlign) -> Self {
         self.align = align;
         self
     }
 
-    /// Set the anchor point (fluent method)
-    pub fn anchor(mut self, anchor: TextAnchor) -> Self {
-        self.anchor = anchor;
-        self
-    }
-    
     /// Get the font name, returning default if none is set
     pub fn get_font_name(&self) -> &str {
         self.font_name.as_deref().unwrap_or("default")
@@ -105,24 +83,6 @@ impl SimpleText {
     /// Update the font name
     pub fn set_font(&mut self, font_name: Option<String>) {
         self.font_name = font_name;
-    }
-
-    /// Calculate the final position based on anchor and viewport size
-    pub fn calculate_anchored_position(&self, viewport_width: f32, viewport_height: f32) -> Vec2 {
-        let (anchor_x, anchor_y) = match self.anchor {
-            TextAnchor::TopLeft => (0.0, viewport_height),
-            TextAnchor::TopCenter => (viewport_width * 0.5, viewport_height),
-            TextAnchor::TopRight => (viewport_width, viewport_height),
-            TextAnchor::MiddleLeft => (0.0, viewport_height * 0.5),
-            TextAnchor::MiddleCenter => (viewport_width * 0.5, viewport_height * 0.5),
-            TextAnchor::MiddleRight => (viewport_width, viewport_height * 0.5),
-            TextAnchor::BottomLeft => (0.0, 0.0),
-            TextAnchor::BottomCenter => (viewport_width * 0.5, 0.0),
-            TextAnchor::BottomRight => (viewport_width, 0.0),
-        };
-
-        // Add the offset position to the anchor point
-        Vec2::new(anchor_x + self.position.x, anchor_y + self.position.y)
     }
 }
 
@@ -160,25 +120,16 @@ impl SimpleTextRenderer {
 
     /// Render a SimpleText object
     pub fn render(&mut self, text: &SimpleText) -> Result<(), String> {
-        // Get viewport dimensions for anchor calculations
-        let viewport = &self.text_renderer.viewport;
-        let (x_min, x_max, y_min, y_max) = viewport.logical_bounds;
-        let viewport_width = x_max - x_min;
-        let viewport_height = y_max - y_min;
-        
-        // Calculate the final position based on anchor
-        let final_position = text.calculate_anchored_position(viewport_width, viewport_height);
-        
         // Create a TextConfig with the SimpleText properties
         let mut text_config = crate::render::text::TextConfig::default();
         text_config.font_size = text.font_size;
         text_config.color = text.color;
         text_config.align = text.align;
         
-        // Create a Text object directly with the calculated position
+        // Create a Text object directly
         let render_text = crate::render::text::Text::with_config(
             text.content.clone(),
-            final_position,
+            text.position,
             text.get_font_name().to_string(),
             text_config
         );
@@ -190,7 +141,7 @@ impl SimpleTextRenderer {
     pub fn text_renderer_mut(&mut self) -> &mut crate::render::text::TextRenderer {
         &mut self.text_renderer
     }
-    
+
     /// Set whether text should be viewport-independent or viewport-relative
     pub fn set_viewport_independent_text(&mut self, independent: bool) {
         self.text_renderer.viewport_mut().set_viewport_independent_text(independent);

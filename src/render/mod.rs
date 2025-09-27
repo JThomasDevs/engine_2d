@@ -7,8 +7,6 @@ pub mod texture;
 #[cfg(feature = "opengl")]
 pub mod text;
 #[cfg(feature = "opengl")]
-pub mod text_utils;
-#[cfg(feature = "opengl")]
 pub mod simple_text;
 #[cfg(feature = "opengl")]
 pub mod shader;

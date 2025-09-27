@@ -127,27 +127,12 @@ impl Viewport {
         Vec2::new(viewport_x, viewport_y)
     }
 
-    /// Calculate the scale factor for a given font size
-    /// This ensures consistent text appearance across different coordinate systems
+    /// Calculate the scale factor for text rendering based on font size
+    /// Returns a direct scale factor where 1.0 = normal size, 2.0 = double size, etc.
     pub fn calculate_scale_factor(&self, font_size: f32) -> f32 {
-        if self.viewport_independent_text {
-            // Viewport-independent mode: text size stays constant regardless of viewport scale
-            // We use a fixed reference viewport size (NDC: -1 to 1 = 2 units) for consistent scaling
-            let reference_viewport_height = 2.0; // NDC coordinate system height
-            
-            // Calculate what the target height should be based on the reference viewport
-            let font_size_fraction = font_size / self.base_font_size;
-            let base_font_fraction = self.text_height_fraction;
-            let target_height = reference_viewport_height * base_font_fraction * font_size_fraction;
-            
-            target_height
-        } else {
-            // Viewport-relative mode: text scales with viewport (original behavior)
-            let logical_height = self.logical_bounds.3 - self.logical_bounds.2; // y_max - y_min
-            let target_height = logical_height * self.text_height_fraction;
-            let font_ratio = font_size / self.base_font_size;
-            target_height / font_ratio
-        }
+        // Direct pixel scaling: font_size directly corresponds to pixel size
+        // This bypasses the complex viewport scaling logic
+        font_size / self.base_font_size
     }
 
     /// Convert logical coordinates to OpenGL NDC coordinates

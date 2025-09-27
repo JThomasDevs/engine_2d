@@ -41,9 +41,9 @@ impl ViewportConfig {
     pub fn ndc() -> Self {
         Self {
             logical_bounds: (-1.0, 1.0, -1.0, 1.0),
-            text_height_fraction: 0.004, // 0.4% for smaller NDC range
+            text_height_fraction: 0.05, // 5% of viewport height
             base_font_size: 16.0,
-            viewport_independent_text: true,
+            viewport_independent_text: false, // Use viewport-relative scaling
         }
     }
     
@@ -51,7 +51,7 @@ impl ViewportConfig {
     pub fn pixel_based(width: f32, height: f32) -> Self {
         Self {
             logical_bounds: (0.0, width, 0.0, height),
-            text_height_fraction: 0.002, // 0.2% for college essay title size
+            text_height_fraction: 0.02, // 2% of viewport height for reasonable text size
             base_font_size: 16.0,
             viewport_independent_text: false, // Pixel-based should be viewport-relative
         }
@@ -61,9 +61,9 @@ impl ViewportConfig {
     pub fn ui_based() -> Self {
         Self {
             logical_bounds: (0.0, 1.0, 0.0, 1.0),
-            text_height_fraction: 0.004, // 0.4% for UI
+            text_height_fraction: 0.08, // 8% for UI - viewport-relative scaling
             base_font_size: 16.0,
-            viewport_independent_text: true,
+            viewport_independent_text: false, // Use viewport-relative scaling for UI coordinates
         }
     }
 }

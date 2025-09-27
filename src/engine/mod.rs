@@ -37,6 +37,7 @@ mod tests {
             vsync: false,
             fullscreen: true,
             viewport: ViewportConfig::ndc(), // Use NDC coordinates
+            fallback_font_path: "assets/fonts/default.ttf".to_string(),
         };
         
         assert_eq!(config.window_title, "Test Game");

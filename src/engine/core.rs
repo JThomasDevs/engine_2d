@@ -44,6 +44,10 @@ pub struct Engine {
     #[cfg(feature = "opengl")]
     text_renderer: SimpleTextRenderer,
     
+    // Event system for handling viewport updates
+    #[cfg(feature = "opengl")]
+    event_system: EventSystem,
+    
     // Current animation
     animation: Box<dyn Animation>,
 }
@@ -66,7 +70,7 @@ impl Engine {
         let event_system = EventSystem::new();
         
         // Create window manager with GlWrapper and event system
-        let window_manager = WindowManager::new(&config, &mut gl_wrapper, Some(event_system))?;
+        let window_manager = WindowManager::new(&config, &mut gl_wrapper, Some(event_system.clone()))?;
         
         // Wrap GlWrapper in Rc for shared ownership
         let gl_wrapper_rc = Rc::new(gl_wrapper);
@@ -84,24 +88,21 @@ impl Engine {
         }
         
         // Create text renderer with the same shared GlWrapper
-        let mut text_renderer = SimpleTextRenderer::new(Rc::clone(&gl_wrapper_rc), config.fallback_font_path.clone())?;
+        let mut text_renderer = SimpleTextRenderer::new(Rc::clone(&gl_wrapper_rc));
+        text_renderer.set_default_font_path(config.fallback_font_path.clone());
         if let Err(e) = text_renderer.initialize() {
             return Err(format!("Failed to initialize text renderer: {}", e).into());
         }
         
         // Configure viewport for text rendering using the config
         let viewport_config = &config.viewport;
-        text_renderer.viewport_mut().logical_bounds = viewport_config.logical_bounds;
-        
-        // Set text height fraction from config
-        if let Err(e) = text_renderer.viewport_mut().set_text_height_fraction(viewport_config.text_height_fraction) {
-            println!("Warning: Failed to set text height fraction: {}", e);
-        }
-        
-        // Set base font size from config
-        if let Err(e) = text_renderer.viewport_mut().set_base_font_size(viewport_config.base_font_size) {
-            println!("Warning: Failed to set base font size: {}", e);
-        }
+        let text_renderer_inner = text_renderer.text_renderer_mut();
+        text_renderer_inner.set_coordinate_range(
+            viewport_config.logical_bounds.0,
+            viewport_config.logical_bounds.1,
+            viewport_config.logical_bounds.2,
+            viewport_config.logical_bounds.3
+        );
         
         // Set viewport independence from config
         text_renderer.set_viewport_independent_text(viewport_config.viewport_independent_text);
@@ -116,6 +117,7 @@ impl Engine {
             renderer,
             sprite_renderer,
             text_renderer,
+            event_system,
             animation,
         })
     }
@@ -191,6 +193,34 @@ impl Engine {
                     }
                 }
             });
+            
+            // Process render events (like viewport updates)
+            if let Ok(receiver) = self.event_system.get_render_receiver().lock() {
+                while let Ok(event) = receiver.try_recv() {
+                    match event {
+                        crate::events::event_types::RenderEvent::ViewportUpdated { .. } => {
+                            // Update OpenGL viewport when window is resized
+                            let (current_width, current_height) = self.window_manager.get_size();
+                            if current_width > 0 && current_height > 0 {
+                                // Update the OpenGL viewport to match the new window size
+                                if let Err(e) = self.renderer.gl().set_viewport(0, 0, current_width as i32, current_height as i32) {
+                                    eprintln!("Failed to update OpenGL viewport: {}", e);
+                                } else {
+                                    println!("Updated OpenGL viewport to: {}x{}", current_width, current_height);
+                                }
+                                
+                                // Update the text renderer's coordinate range to match the new window size
+                                // For UI-based coordinates, we want to maintain the 0-1 range regardless of window size
+                                // The text renderer should use the same logical bounds as configured
+                                // No need to change the logical bounds - they should stay (0,1,0,1) for UI coordinates
+                            }
+                        }
+                        _ => {
+                            // Handle other render events if needed
+                        }
+                    }
+                }
+            }
             
             // Clear screen with dark background
             if let Err(e) = self.renderer.clear(0.1, 0.1, 0.1, 1.0) {
