@@ -107,18 +107,18 @@ impl SimpleText {
         self.font_name = font_name;
     }
 
-    /// Calculate the final position based on anchor and viewport size
-    pub fn calculate_anchored_position(&self, viewport_width: f32, viewport_height: f32) -> Vec2 {
+    /// Calculate the final position based on anchor and viewport bounds
+    pub fn calculate_anchored_position(&self, x_min: f32, x_max: f32, y_min: f32, y_max: f32) -> Vec2 {
         let (anchor_x, anchor_y) = match self.anchor {
-            TextAnchor::TopLeft => (0.0, viewport_height),
-            TextAnchor::TopCenter => (viewport_width * 0.5, viewport_height),
-            TextAnchor::TopRight => (viewport_width, viewport_height),
-            TextAnchor::MiddleLeft => (0.0, viewport_height * 0.5),
-            TextAnchor::MiddleCenter => (viewport_width * 0.5, viewport_height * 0.5),
-            TextAnchor::MiddleRight => (viewport_width, viewport_height * 0.5),
-            TextAnchor::BottomLeft => (0.0, 0.0),
-            TextAnchor::BottomCenter => (viewport_width * 0.5, 0.0),
-            TextAnchor::BottomRight => (viewport_width, 0.0),
+            TextAnchor::TopLeft => (x_min, y_max),
+            TextAnchor::TopCenter => (x_min + (x_max - x_min) * 0.5, y_max),
+            TextAnchor::TopRight => (x_max, y_max),
+            TextAnchor::MiddleLeft => (x_min, y_min + (y_max - y_min) * 0.5),
+            TextAnchor::MiddleCenter => (x_min + (x_max - x_min) * 0.5, y_min + (y_max - y_min) * 0.5),
+            TextAnchor::MiddleRight => (x_max, y_min + (y_max - y_min) * 0.5),
+            TextAnchor::BottomLeft => (x_min, y_min),
+            TextAnchor::BottomCenter => (x_min + (x_max - x_min) * 0.5, y_min),
+            TextAnchor::BottomRight => (x_max, y_min),
         };
 
         // Add the offset position to the anchor point
@@ -163,11 +163,9 @@ impl SimpleTextRenderer {
         // Get viewport dimensions for anchor calculations
         let viewport = &self.text_renderer.viewport;
         let (x_min, x_max, y_min, y_max) = viewport.logical_bounds;
-        let viewport_width = x_max - x_min;
-        let viewport_height = y_max - y_min;
         
         // Calculate the final position based on anchor
-        let final_position = text.calculate_anchored_position(viewport_width, viewport_height);
+        let final_position = text.calculate_anchored_position(x_min, x_max, y_min, y_max);
         
         // Create a TextConfig with the SimpleText properties
         let mut text_config = crate::render::text::TextConfig::default();

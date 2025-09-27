@@ -2,6 +2,8 @@ use engine_2d::engine::{Engine, EngineConfig};
 use engine_2d::animation::Animation;
 use engine_2d::render::sprite::{Sprite, SpriteRenderer};
 use engine_2d::render::texture::TextureId;
+use engine_2d::engine::window::WindowManager;
+use engine_2d::render::simple_text::SimpleTextRenderer;
 use glam::Vec2;
 
 /// Circular animation - sprites move in circular patterns
@@ -27,7 +29,7 @@ impl CircularAnimation {
 }
 
 impl Animation for CircularAnimation {
-    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, _delta_time: f32, _window_manager: Option<&mut WindowManager>, _text_renderer: Option<&mut SimpleTextRenderer>) {
         // Only render if we have a sprite renderer (OpenGL mode)
         let Some(sprite_renderer) = sprite_renderer else {
             // In headless mode, just do the animation logic without rendering
@@ -96,7 +98,7 @@ impl BouncingAnimation {
 }
 
 impl Animation for BouncingAnimation {
-    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, _delta_time: f32, _window_manager: Option<&mut WindowManager>, _text_renderer: Option<&mut SimpleTextRenderer>) {
         // Only render if we have a sprite renderer (OpenGL mode)
         let Some(sprite_renderer) = sprite_renderer else {
             // In headless mode, just do the animation logic without rendering
@@ -166,7 +168,7 @@ impl SpinningAnimation {
 }
 
 impl Animation for SpinningAnimation {
-    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32) {
+    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, _delta_time: f32, _window_manager: Option<&mut WindowManager>, _text_renderer: Option<&mut SimpleTextRenderer>) {
         // Only render if we have a sprite renderer (OpenGL mode)
         let Some(sprite_renderer) = sprite_renderer else {
             // In headless mode, just do the animation logic without rendering

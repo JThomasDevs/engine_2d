@@ -68,6 +68,8 @@ struct SimpleTextShowcase {
     demos: Vec<&'static str>,
     // Store SimpleText objects for each demo
     demo_texts: Vec<Vec<SimpleText>>,
+    // Mouse position for coordinate display
+    mouse_position: Vec2,
 }
 
 #[cfg(feature = "opengl")]
@@ -137,6 +139,7 @@ impl SimpleTextShowcase {
                 "Fluent API",
             ],
             demo_texts: Vec::new(),
+            mouse_position: Vec2::new(0.0, 0.0),
         };
         
         // Initialize all demo texts
@@ -267,11 +270,27 @@ impl Animation for SimpleTextShowcase {
             }
         }
     }
+
     
-    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, _elapsed_time: f32, delta_time: f32, _window_manager: Option<&mut WindowManager>, text_renderer: Option<&mut SimpleTextRenderer>) {
+    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, _elapsed_time: f32, delta_time: f32, window_manager: Option<&mut WindowManager>, text_renderer: Option<&mut SimpleTextRenderer>) {
         
         // Handle input
         self.input_manager.update(delta_time);
+        
+        // Process mouse events from the event system
+        if let Some(ref window_manager) = window_manager {
+            if let Some(event_system) = window_manager.get_event_system() {
+                // Process all pending input events
+                while let Some(input_event) = event_system.receive_input_event() {
+                    match input_event {
+                        engine_2d::events::event_types::InputEvent::MouseMove { x, y, .. } => {
+                            self.mouse_position = Vec2::new(x, y);
+                        }
+                        _ => {} // Ignore other input events
+                    }
+                }
+            }
+        }
         
         // Check for demo switching
         if self.is_action_just_pressed("NEXT_DEMO") {
@@ -290,6 +309,9 @@ impl Animation for SimpleTextShowcase {
         
         if self.is_action_just_pressed("EXIT") {
             println!("Exiting demo...");
+            if let Some(window_manager) = window_manager {
+                window_manager.request_close();
+            }
             return;
         }
         
@@ -300,6 +322,17 @@ impl Animation for SimpleTextShowcase {
                 for simple_text in current_texts {
                     let _ = tr.render(simple_text);
                 }
+            }
+            
+            // Add mouse coordinate display for Demo 1 (Anchor Positioning)
+            if self.current_demo == 0 {
+                let mouse_coords_text = format!("Mouse: ({:.0}, {:.0})", self.mouse_position.x, self.mouse_position.y);
+                let mouse_display = SimpleText::new(mouse_coords_text, 14)
+                    .color((0.0, 1.0, 1.0)) // Cyan color
+                    .anchor(TextAnchor::TopRight)
+                    .position(Vec2::new(-20.0, -40.0)) // Position in top-right, avoiding other text
+                    .align(engine_2d::render::text::TextAlign::Right);
+                let _ = tr.render(&mouse_display);
             }
             
             // Show demo info using SimpleText
@@ -349,7 +382,7 @@ fn main() {
         show_fps: true,
         vsync: true,
         fullscreen: false,
-        viewport: engine_2d::engine::config::ViewportConfig::pixel_based(1024.0, 768.0),
+        viewport: engine_2d::engine::config::ViewportConfig::with_bounds(0.0, 1024.0, 0.0, 768.0),
         fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
     

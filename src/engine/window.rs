@@ -87,6 +87,7 @@ pub struct WindowManager {
     pub cursor_hidden: bool,
     pub mouse_captured: bool,
     pub vsync_enabled: bool,
+    pub mouse_position: (f32, f32),
 }
 
 impl WindowManager {
@@ -168,6 +169,7 @@ impl WindowManager {
             cursor_hidden: false,
             mouse_captured: false,
             vsync_enabled: config.vsync,
+            mouse_position: (0.0, 0.0),
         })
     }
 
@@ -466,7 +468,41 @@ impl WindowManager {
     pub fn get_cursor_position(&self) -> (f64, f64) {
         self.window.get_cursor_pos()
     }
-    
+
+    /// Get a reference to the event system
+    pub fn get_event_system(&self) -> Option<&EventSystem> {
+        self.event_system.as_ref()
+    }
+
+    /// Update mouse position and send mouse move events
+    pub fn update_mouse_position(&mut self) {
+        let (x, y) = self.get_cursor_position();
+        let (width_points, height_points) = self.window.get_size();
+        
+        // Convert to centered coordinates where (0,0) is center of screen
+-        let center_x = width as f32 / 2.0;
+        let center_x = width_points as f32 / 2.0;
+        let center_y = height_points as f32 / 2.0;
+        let centered_x = x as f32 - center_x;
+        let centered_y = center_y - y as f32; // Flip Y axis so positive Y is up
+        
+        let new_position = (centered_x, centered_y);
+        
+        // Only send event if position changed
+        if new_position != self.mouse_position {
+            self.mouse_position = new_position;
+            
+            // Send mouse move event to event system
+            if let Some(event_system) = &self.event_system {
+                let mouse_event = crate::events::event_types::InputEvent::MouseMove {
+                    x: new_position.0,
+                    y: new_position.1,
+                    timestamp: std::time::Instant::now(),
+                };
+                let _ = event_system.send_input_event(mouse_event);
+            }
+        }
+    }    
     /// Set cursor mode
     pub fn set_cursor_mode(&mut self, mode: glfw::CursorMode) {
         self.window.set_cursor_mode(mode);

@@ -130,9 +130,18 @@ impl Viewport {
     /// Calculate the scale factor for text rendering based on font size
     /// Returns a direct scale factor where 1.0 = normal size, 2.0 = double size, etc.
     pub fn calculate_scale_factor(&self, font_size: f32) -> f32 {
-        // Direct pixel scaling: font_size directly corresponds to pixel size
-        // This bypasses the complex viewport scaling logic
-        font_size / self.base_font_size
+        if self.viewport_independent_text {
+            // Viewport-independent: font_size directly corresponds to pixel size
+            font_size / self.base_font_size
+        } else {
+            // Viewport-relative: scale based on text_height_fraction and viewport height
+            // The text_height_fraction represents what fraction of viewport height the base font size should occupy
+            let viewport_height = self.logical_bounds.3 - self.logical_bounds.2;
+            let base_target_pixel = self.text_height_fraction * viewport_height;
+            let base_scale = base_target_pixel / self.base_font_size;
+            // Scale by the ratio of requested font size to base font size
+            base_scale * (font_size / self.base_font_size)
+        }
     }
 
     /// Convert logical coordinates to OpenGL NDC coordinates

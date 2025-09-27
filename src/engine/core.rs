@@ -179,6 +179,9 @@ impl Engine {
             // Process window events
             self.window_manager.poll_events();
             
+            // Update mouse position and send mouse move events
+            self.window_manager.update_mouse_position();
+            
             // Handle keyboard input for quit and forward other events to animation
             self.window_manager.process_events(|event| {
                 match event {

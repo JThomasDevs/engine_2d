@@ -90,7 +90,9 @@ impl Default for EngineConfig {
             vsync: true,
             fullscreen: false,
             viewport: ViewportConfig::default(),
-            fallback_font_path: "assets/fonts/default.ttf".to_string(),
-        }
-    }
+            fallback_font_path: format!(
+                "{}/assets/fonts/default.ttf",
+                env!("CARGO_MANIFEST_DIR")
+            ),
+        }    }
 }
