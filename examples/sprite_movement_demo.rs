@@ -1,20 +1,15 @@
+#[cfg(feature = "opengl")]
+use engine_2d::engine::window::WindowEvent;
 /// Interactive sprite movement demo
-/// 
+///
 /// This example demonstrates the input system by allowing you to move a sprite
 /// around the screen using WASD or arrow keys.
-
-#[cfg(feature = "opengl")]
-use engine_2d::input::*;
-#[cfg(feature = "opengl")]
 use engine_2d::engine::{Engine, EngineConfig};
+use engine_2d::input::*;
 #[cfg(feature = "opengl")]
 use engine_2d::render::sprite::{Sprite, SpriteRenderer};
 #[cfg(feature = "opengl")]
 use engine_2d::render::texture::TextureId;
-#[cfg(feature = "opengl")]
-use engine_2d::engine::window::{WindowEvent, WindowManager};
-#[cfg(feature = "opengl")]
-use engine_2d::render::simple_text::SimpleTextRenderer;
 #[cfg(feature = "opengl")]
 use glam::Vec2;
 #[cfg(feature = "opengl")]
@@ -35,7 +30,7 @@ struct SpriteMovementAnimation {
 impl SpriteMovementAnimation {
     fn new() -> Self {
         let mut input_manager = InputManager::new();
-        
+
         // Define movement actions
         let movement_actions = vec![
             GameAction {
@@ -103,16 +98,16 @@ impl SpriteMovementAnimation {
                 },
             },
         ];
-        
+
         input_manager.register_actions(movement_actions);
-        
+
         // Create a simple colored sprite (red square)
         let sprite = Sprite::new(
-            TextureId(0), // We'll create a texture in the animation
+            TextureId(0),        // We'll create a texture in the animation
             Vec2::new(0.0, 0.0), // Start at origin (will be moved by input)
             Vec2::new(0.1, 0.1), // Size as fraction of screen (10% x 10%)
         );
-        
+
         Self {
             sprite,
             input_manager,
@@ -124,12 +119,20 @@ impl SpriteMovementAnimation {
 
 #[cfg(feature = "opengl")]
 impl engine_2d::animation::Animation for SpriteMovementAnimation {
-    fn update(&mut self, sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32, _window_manager: Option<&mut WindowManager>, _text_renderer: Option<&mut SimpleTextRenderer>) {
+    fn update(
+        &mut self,
+        sprite_renderer: Option<&mut SpriteRenderer>,
+        elapsed_time: f32,
+        delta_time: f32,
+    ) {
         // Initialize sprite renderer if we have one
         if let Some(renderer) = sprite_renderer {
             if !self.texture_created {
                 // Create a red texture for our sprite (only once)
-                match renderer.texture_manager().create_color_texture(64, 64, (255, 0, 0, 255)) {
+                match renderer
+                    .texture_manager()
+                    .create_color_texture(64, 64, (255, 0, 0, 255))
+                {
                     Ok(texture_id) => {
                         self.sprite.texture_id = texture_id;
                         println!("✅ Created red texture for sprite");
@@ -140,13 +143,13 @@ impl engine_2d::animation::Animation for SpriteMovementAnimation {
                     }
                 }
             }
-            
+
             // Update input manager
             self.input_manager.update(elapsed_time);
-            
+
             // Handle movement
             let mut velocity = Vec2::ZERO;
-            
+
             if self.input_manager.is_action_held("MOVE_UP") {
                 velocity.y += self.move_speed * delta_time;
             }
@@ -159,14 +162,14 @@ impl engine_2d::animation::Animation for SpriteMovementAnimation {
             if self.input_manager.is_action_held("MOVE_RIGHT") {
                 velocity.x += self.move_speed * delta_time;
             }
-            
+
             // Update sprite position
             self.sprite.position += velocity;
-            
+
             // Keep sprite within screen bounds (normalized coordinates -1 to 1)
             self.sprite.position.x = self.sprite.position.x.max(-0.9).min(0.9);
             self.sprite.position.y = self.sprite.position.y.max(-0.9).min(0.9);
-            
+
             // Render the sprite
             if let Err(e) = renderer.render_sprite(&self.sprite) {
                 println!("⚠️  Failed to render sprite: {}", e);
@@ -174,13 +177,17 @@ impl engine_2d::animation::Animation for SpriteMovementAnimation {
                 // Debug: Print sprite position occasionally
                 static FRAME_COUNT: AtomicU32 = AtomicU32::new(0);
                 let count = FRAME_COUNT.fetch_add(1, Ordering::Relaxed);
-                if count % 60 == 0 { // Every 60 frames (about 1 second at 60fps)
-                    println!("Sprite position: ({:.2}, {:.2})", self.sprite.position.x, self.sprite.position.y);
+                if count % 60 == 0 {
+                    // Every 60 frames (about 1 second at 60fps)
+                    println!(
+                        "Sprite position: ({:.2}, {:.2})",
+                        self.sprite.position.x, self.sprite.position.y
+                    );
                 }
             }
         }
     }
-    
+
     fn handle_event(&mut self, event: &WindowEvent) {
         match event {
             WindowEvent::Glfw(glfw::WindowEvent::Key(key, _scancode, action, _modifiers)) => {
@@ -196,18 +203,21 @@ impl engine_2d::animation::Animation for SpriteMovementAnimation {
                     Key::Right => KeyCode::Right,
                     _ => return, // Ignore other keys
                 };
-                
+
                 // Convert GLFW action to our input state
                 match action {
                     Action::Press => {
-                        self.input_manager.set_raw_input(PhysicalInput::Keyboard(key_code), true);
+                        self.input_manager
+                            .set_raw_input(PhysicalInput::Keyboard(key_code), true);
                     }
                     Action::Release => {
-                        self.input_manager.set_raw_input(PhysicalInput::Keyboard(key_code), false);
+                        self.input_manager
+                            .set_raw_input(PhysicalInput::Keyboard(key_code), false);
                     }
                     Action::Repeat => {
                         // For repeat, we'll treat it as a press
-                        self.input_manager.set_raw_input(PhysicalInput::Keyboard(key_code), true);
+                        self.input_manager
+                            .set_raw_input(PhysicalInput::Keyboard(key_code), true);
                     }
                 }
             }
@@ -216,7 +226,7 @@ impl engine_2d::animation::Animation for SpriteMovementAnimation {
             }
         }
     }
-    
+
     fn name(&self) -> &str {
         "Sprite Movement Demo"
     }
@@ -229,14 +239,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("   Please run with: cargo run --example sprite_movement_demo --features opengl");
         std::process::exit(1);
     }
-    
+
     #[cfg(feature = "opengl")]
     {
         println!("🎮 Sprite Movement Demo");
         println!("=======================");
         println!("Use WASD or Arrow Keys to move the red sprite");
         println!("Press ESC to quit");
-        
+
         // Create engine configuration
         let config = EngineConfig {
             window_title: "Sprite Movement Demo".to_string(),
@@ -246,23 +256,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             show_fps: true,
             vsync: true,
             fullscreen: false,
-            viewport: engine_2d::engine::config::ViewportConfig::ui_based(),
-            fallback_font_path: "assets/fonts/default.ttf".to_string(),
         };
-        
+
         // Create the animation
         let animation = Box::new(SpriteMovementAnimation::new());
-        
+
         // Create the engine with our custom animation
         let mut engine = Engine::new_with_config_and_animation(config, animation)?;
-        
+
         println!("✅ Engine created successfully!");
         println!("✅ Input system initialized with WASD/Arrow key bindings");
         println!("✅ Sprite movement animation loaded");
-        
+
         // Run the engine
         engine.run()?;
-        
+
         println!("Demo finished!");
         Ok(())
     }

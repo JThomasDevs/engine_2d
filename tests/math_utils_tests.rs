@@ -153,7 +153,7 @@ fn test_geometry_line_intersection() {
     let line1 = geometry::LineSegment::new(Vec2::new(0.0, 0.0), Vec2::new(10.0, 10.0));
     let line2 = geometry::LineSegment::new(Vec2::new(0.0, 10.0), Vec2::new(10.0, 0.0));
     assert!(line1.intersects(&line2));
-    
+
     if let Some(intersection) = line1.intersection_point(&line2) {
         assert!((intersection.x - 5.0).abs() < 1e-6);
         assert!((intersection.y - 5.0).abs() < 1e-6);
@@ -198,7 +198,7 @@ fn test_physics_projectile_motion() {
     let initial_pos = Vec2::new(0.0, 0.0);
     let initial_velocity = Vec2::new(10.0, 20.0);
     let gravity = Vec2::new(0.0, -9.81);
-    
+
     let pos_at_2s = physics::projectile_position(initial_pos, initial_velocity, gravity, 2.0);
     assert!(pos_at_2s.x > 0.0); // Should move forward
     assert!(pos_at_2s.y > 0.0); // Should still be above ground
@@ -209,19 +209,19 @@ fn test_physics_elastic_collision() {
     let velocity1 = Vec2::new(5.0, 0.0);
     let velocity2 = Vec2::new(3.0, 0.0);
     let normal = Vec2::new(1.0, 0.0);
-    
+
     let (new_v1, new_v2) = physics::elastic_collision(velocity1, velocity2, 1.0, 1.0, normal);
-    
+
     // Test that the function returns valid velocities
     assert!(new_v1.x.is_finite());
     assert!(new_v1.y.is_finite());
     assert!(new_v2.x.is_finite());
     assert!(new_v2.y.is_finite());
-    
+
     // Test that Y components remain unchanged (collision is along X axis)
     assert!((new_v1.y - 0.0).abs() < 1e-6);
     assert!((new_v2.y - 0.0).abs() < 1e-6);
-    
+
     // Test that the function doesn't crash and returns reasonable values
     assert!(new_v1.length() < 1000.0); // Reasonable velocity limit
     assert!(new_v2.length() < 1000.0); // Reasonable velocity limit
@@ -233,7 +233,7 @@ fn test_physics_spring_force() {
     let pos2 = Vec2::new(5.0, 0.0);
     let rest_length = 3.0;
     let spring_constant = 1.0;
-    
+
     let force = physics::spring_force(pos1, pos2, rest_length, spring_constant);
     assert!(force.x < 0.0); // Should pull back toward rest length
 }
@@ -245,7 +245,7 @@ fn test_physics_gravitational_force() {
     let mass1 = 1.0;
     let mass2 = 1.0;
     let g_constant = 1.0;
-    
+
     let force = physics::gravitational_force(pos1, pos2, mass1, mass2, g_constant);
     assert!(force.x > 0.0); // Should attract toward pos2
 }
@@ -255,7 +255,7 @@ fn test_physics_integration() {
     let position = Vec2::new(0.0, 0.0);
     let velocity = Vec2::new(10.0, 5.0);
     let delta_time = 0.1;
-    
+
     let new_position = physics::integrate_position(position, velocity, delta_time);
     assert!((new_position.x - 1.0).abs() < 1e-6);
     assert!((new_position.y - 0.5).abs() < 1e-6);
@@ -266,7 +266,7 @@ fn test_physics_terminal_velocity() {
     let mass = 1.0;
     let gravity = 9.81;
     let drag_coefficient = 0.1;
-    
+
     let terminal = physics::terminal_velocity(mass, gravity, drag_coefficient);
     assert!(terminal > 0.0);
     assert!(terminal.is_finite());

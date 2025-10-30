@@ -17,11 +17,11 @@ pub enum SystemError {
 impl std::fmt::Display for SystemError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SystemError::InitializationFailed(msg) => write!(f, "Initialization failed: {}", msg),
-            SystemError::ProcessingFailed(msg) => write!(f, "Processing failed: {}", msg),
-            SystemError::ResourceNotFound(msg) => write!(f, "Resource not found: {}", msg),
-            SystemError::InvalidState(msg) => write!(f, "Invalid state: {}", msg),
-            SystemError::ThreadingError(msg) => write!(f, "Threading error: {}", msg),
+            SystemError::InitializationFailed(msg) => write!(f, "Initialization failed: {msg}"),
+            SystemError::ProcessingFailed(msg) => write!(f, "Processing failed: {msg}"),
+            SystemError::ResourceNotFound(msg) => write!(f, "Resource not found: {msg}"),
+            SystemError::InvalidState(msg) => write!(f, "Invalid state: {msg}"),
+            SystemError::ThreadingError(msg) => write!(f, "Threading error: {msg}"),
         }
     }
 }
@@ -58,37 +58,37 @@ pub enum SystemState {
 pub trait GameSystem: Send + Sync {
     /// Get the name of this system
     fn name(&self) -> &str;
-    
+
     /// Get the priority of this system
     fn priority(&self) -> SystemPriority {
         SystemPriority::Normal
     }
-    
+
     /// Get the current state of this system
     fn state(&self) -> SystemState;
-    
+
     /// Initialize the system
     fn initialize(&mut self) -> SystemResult<()>;
-    
+
     /// Shutdown the system
     fn shutdown(&mut self) -> SystemResult<()>;
-    
+
     /// Update the system (called every frame)
     fn update(&mut self, delta_time: Duration) -> SystemResult<()>;
-    
+
     /// Process events for this system
     fn process_events(&mut self, events: &[Box<dyn Event>]) -> SystemResult<()>;
-    
+
     /// Get the maximum time this system should take per frame (for performance monitoring)
     fn max_frame_time(&self) -> Duration {
         Duration::from_millis(16) // Default to 60 FPS budget
     }
-    
+
     /// Check if this system can run in parallel with other systems
     fn can_run_parallel(&self) -> bool {
         true
     }
-    
+
     /// Get dependencies (systems that must run before this one)
     fn dependencies(&self) -> Vec<String> {
         Vec::new()
@@ -103,15 +103,15 @@ macro_rules! impl_game_system {
             fn name(&self) -> &str {
                 $system_name
             }
-            
+
             fn priority(&self) -> SystemPriority {
                 $priority
             }
-            
+
             fn state(&self) -> SystemState {
                 self.state
             }
-            
+
             fn max_frame_time(&self) -> Duration {
                 Duration::from_millis(16)
             }

@@ -1,10 +1,9 @@
+use crate::define_actions;
 /// Example game actions using the input system
-/// 
+///
 /// This file demonstrates how to define game actions using the macro system.
 /// In a real game, you would define your own actions here.
-
 use crate::input::types::*;
-use crate::define_actions;
 
 // Define common game actions
 define_actions! {
@@ -21,7 +20,7 @@ define_actions! {
         tags: ["movement", "basic"],
         priority: 1,
     };
-    
+
     MOVE_BACKWARD: {
         name: "Move Backward",
         category: Movement,
@@ -34,7 +33,7 @@ define_actions! {
         tags: ["movement", "basic"],
         priority: 1,
     };
-    
+
     MOVE_LEFT: {
         name: "Move Left",
         category: Movement,
@@ -47,7 +46,7 @@ define_actions! {
         tags: ["movement", "basic"],
         priority: 1,
     };
-    
+
     MOVE_RIGHT: {
         name: "Move Right",
         category: Movement,
@@ -60,7 +59,7 @@ define_actions! {
         tags: ["movement", "basic"],
         priority: 1,
     };
-    
+
     // Mouse look actions
     MOUSE_LOOK_X: {
         name: "Mouse Look X",
@@ -77,7 +76,7 @@ define_actions! {
         tags: ["camera", "analog"],
         priority: 2,
     };
-    
+
     MOUSE_LOOK_Y: {
         name: "Mouse Look Y",
         category: Movement,
@@ -93,7 +92,7 @@ define_actions! {
         tags: ["camera", "analog"],
         priority: 2,
     };
-    
+
     // Combat actions
     FIRE_WEAPON: {
         name: "Fire Weapon",
@@ -107,7 +106,7 @@ define_actions! {
         tags: ["combat", "weapon"],
         priority: 1,
     };
-    
+
     AIM_DOWN_SIGHTS: {
         name: "Aim Down Sights",
         category: Combat,
@@ -120,7 +119,7 @@ define_actions! {
         tags: ["combat", "weapon"],
         priority: 1,
     };
-    
+
     RELOAD: {
         name: "Reload",
         category: Combat,
@@ -133,7 +132,7 @@ define_actions! {
         tags: ["combat", "weapon"],
         priority: 1,
     };
-    
+
     // UI actions
     PAUSE: {
         name: "Pause Game",
@@ -147,7 +146,7 @@ define_actions! {
         tags: ["ui", "pause"],
         priority: 3,
     };
-    
+
     QUICK_SAVE: {
         name: "Quick Save",
         category: UI,
@@ -162,7 +161,7 @@ define_actions! {
         tags: ["ui", "save", "shortcut"],
         priority: 3,
     };
-    
+
     QUICK_LOAD: {
         name: "Quick Load",
         category: UI,
@@ -177,7 +176,7 @@ define_actions! {
         tags: ["ui", "load", "shortcut"],
         priority: 3,
     };
-    
+
     // Interaction actions
     INTERACT: {
         name: "Interact",
@@ -191,7 +190,7 @@ define_actions! {
         tags: ["interaction", "basic"],
         priority: 1,
     };
-    
+
     // Debug actions
     DEBUG_CONSOLE: {
         name: "Debug Console",
@@ -209,7 +208,7 @@ define_actions! {
         priority: 5,
         context: "debug_mode",
     };
-    
+
     DEBUG_TOGGLE_WIREFRAME: {
         name: "Toggle Wireframe",
         category: Debug,

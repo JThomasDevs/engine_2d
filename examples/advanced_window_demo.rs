@@ -1,18 +1,17 @@
+#[cfg(feature = "opengl")]
+use engine_2d::engine::window::{WindowEvent, WindowManager};
 /// Advanced Window Features Demo
-/// 
+///
 /// This example demonstrates the new advanced window features including:
 /// - VSync control
 /// - Fullscreen toggle
 /// - Window positioning
 /// - Cursor management
 /// - Window state management
-
 use engine_2d::engine::{Engine, EngineConfig};
 use engine_2d::input::*;
 #[cfg(feature = "opengl")]
 use engine_2d::render::sprite::SpriteRenderer;
-#[cfg(feature = "opengl")]
-use engine_2d::engine::window::{WindowManager, WindowEvent};
 #[cfg(feature = "opengl")]
 use glfw::{Action, Key};
 
@@ -32,7 +31,7 @@ struct AdvancedWindowDemo {
 impl AdvancedWindowDemo {
     fn new() -> Self {
         let mut input_manager = InputManager::new();
-        
+
         // Define demo actions
         let demo_actions = vec![
             GameAction {
@@ -40,9 +39,7 @@ impl AdvancedWindowDemo {
                 display_name: "Toggle Fullscreen".to_string(),
                 category: ActionCategory::UI,
                 input_type: InputType::Digital,
-                default_bindings: vec![
-                    InputBinding::Single(PhysicalInput::Keyboard(KeyCode::F)),
-                ],
+                default_bindings: vec![InputBinding::Single(PhysicalInput::Keyboard(KeyCode::F))],
                 metadata: ActionMetadata {
                     description: Some("Toggle between windowed and fullscreen mode".to_string()),
                     tags: vec!["window".to_string(), "fullscreen".to_string()],
@@ -55,9 +52,7 @@ impl AdvancedWindowDemo {
                 display_name: "Toggle VSync".to_string(),
                 category: ActionCategory::UI,
                 input_type: InputType::Digital,
-                default_bindings: vec![
-                    InputBinding::Single(PhysicalInput::Keyboard(KeyCode::V)),
-                ],
+                default_bindings: vec![InputBinding::Single(PhysicalInput::Keyboard(KeyCode::V))],
                 metadata: ActionMetadata {
                     description: Some("Toggle VSync on/off".to_string()),
                     tags: vec!["window".to_string(), "vsync".to_string()],
@@ -70,9 +65,7 @@ impl AdvancedWindowDemo {
                 display_name: "Minimize Window".to_string(),
                 category: ActionCategory::UI,
                 input_type: InputType::Digital,
-                default_bindings: vec![
-                    InputBinding::Single(PhysicalInput::Keyboard(KeyCode::M)),
-                ],
+                default_bindings: vec![InputBinding::Single(PhysicalInput::Keyboard(KeyCode::M))],
                 metadata: ActionMetadata {
                     description: Some("Minimize the window".to_string()),
                     tags: vec!["window".to_string(), "minimize".to_string()],
@@ -85,9 +78,7 @@ impl AdvancedWindowDemo {
                 display_name: "Hide Cursor".to_string(),
                 category: ActionCategory::UI,
                 input_type: InputType::Digital,
-                default_bindings: vec![
-                    InputBinding::Single(PhysicalInput::Keyboard(KeyCode::H)),
-                ],
+                default_bindings: vec![InputBinding::Single(PhysicalInput::Keyboard(KeyCode::H))],
                 metadata: ActionMetadata {
                     description: Some("Hide/show cursor".to_string()),
                     tags: vec!["window".to_string(), "cursor".to_string()],
@@ -100,9 +91,7 @@ impl AdvancedWindowDemo {
                 display_name: "Capture Mouse".to_string(),
                 category: ActionCategory::UI,
                 input_type: InputType::Digital,
-                default_bindings: vec![
-                    InputBinding::Single(PhysicalInput::Keyboard(KeyCode::C)),
-                ],
+                default_bindings: vec![InputBinding::Single(PhysicalInput::Keyboard(KeyCode::C))],
                 metadata: ActionMetadata {
                     description: Some("Capture/release mouse cursor".to_string()),
                     tags: vec!["window".to_string(), "mouse".to_string()],
@@ -115,9 +104,7 @@ impl AdvancedWindowDemo {
                 display_name: "Center Window".to_string(),
                 category: ActionCategory::UI,
                 input_type: InputType::Digital,
-                default_bindings: vec![
-                    InputBinding::Single(PhysicalInput::Keyboard(KeyCode::T)),
-                ],
+                default_bindings: vec![InputBinding::Single(PhysicalInput::Keyboard(KeyCode::T))],
                 metadata: ActionMetadata {
                     description: Some("Center window on screen".to_string()),
                     tags: vec!["window".to_string(), "position".to_string()],
@@ -130,20 +117,22 @@ impl AdvancedWindowDemo {
                 display_name: "Analyze VSync".to_string(),
                 category: ActionCategory::UI,
                 input_type: InputType::Digital,
-                default_bindings: vec![
-                    InputBinding::Single(PhysicalInput::Keyboard(KeyCode::A)),
-                ],
+                default_bindings: vec![InputBinding::Single(PhysicalInput::Keyboard(KeyCode::A))],
                 metadata: ActionMetadata {
                     description: Some("Show detailed VSync analysis".to_string()),
-                    tags: vec!["window".to_string(), "vsync".to_string(), "analysis".to_string()],
+                    tags: vec![
+                        "window".to_string(),
+                        "vsync".to_string(),
+                        "analysis".to_string(),
+                    ],
                     priority: 1,
                     context_required: None,
                 },
             },
         ];
-        
+
         input_manager.register_actions(demo_actions);
-        
+
         Self {
             input_manager,
             last_instruction_time: 0.0,
@@ -154,18 +143,23 @@ impl AdvancedWindowDemo {
             last_frame_time: std::time::Instant::now(),
         }
     }
-    
+
     fn is_action_just_pressed(&mut self, action_id: &str) -> bool {
         let current_pressed = self.input_manager.is_action_pressed(action_id);
-        let last_pressed = self.last_action_states.get(action_id).copied().unwrap_or(false);
-        
+        let last_pressed = self
+            .last_action_states
+            .get(action_id)
+            .copied()
+            .unwrap_or(false);
+
         // Update the last state
-        self.last_action_states.insert(action_id.to_string(), current_pressed);
-        
+        self.last_action_states
+            .insert(action_id.to_string(), current_pressed);
+
         // Return true if currently pressed but wasn't pressed last frame
         current_pressed && !last_pressed
     }
-    
+
     fn track_frame_time(&mut self, delta_time: f32) {
         // Track frame times for VSync analysis
         self.frame_times.push(delta_time);
@@ -173,47 +167,53 @@ impl AdvancedWindowDemo {
             self.frame_times.remove(0);
         }
     }
-    
+
     fn analyze_vsync_performance(&self) -> (f32, f32, f32, f32) {
         if self.frame_times.is_empty() {
             return (0.0, 0.0, 0.0, 0.0);
         }
-        
+
         let avg_frame_time = self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32;
-        let min_frame_time = self.frame_times.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+        let min_frame_time = self
+            .frame_times
+            .iter()
+            .fold(f32::INFINITY, |a, &b| a.min(b));
         let max_frame_time = self.frame_times.iter().fold(0.0_f32, |a, &b| a.max(b));
         let avg_fps = 1.0 / avg_frame_time;
-        
+
         (avg_frame_time, min_frame_time, max_frame_time, avg_fps)
     }
-    
+
     fn get_vsync_analysis(&self) -> String {
-        let (avg_frame_time, min_frame_time, max_frame_time, avg_fps) = self.analyze_vsync_performance();
-        
+        let (avg_frame_time, min_frame_time, max_frame_time, avg_fps) =
+            self.analyze_vsync_performance();
+
         // VSync should result in frame times close to 16.67ms (60fps) or 8.33ms (120fps)
         let expected_60fps = 1.0 / 60.0; // ~16.67ms
         let expected_120fps = 1.0 / 120.0; // ~8.33ms
-        
+
         let vsync_60fps_deviation = (avg_frame_time - expected_60fps).abs();
         let vsync_120fps_deviation = (avg_frame_time - expected_120fps).abs();
-        
+
         let is_likely_vsynced = vsync_60fps_deviation < 0.002 || vsync_120fps_deviation < 0.002; // 2ms tolerance
-        
+
         // Calculate frame time variance (VSync should have low variance)
         let variance = if self.frame_times.len() > 1 {
             let mean = avg_frame_time;
-            let sum_squared_diff: f32 = self.frame_times.iter()
-                .map(|&x| (x - mean).powi(2))
-                .sum();
+            let sum_squared_diff: f32 = self.frame_times.iter().map(|&x| (x - mean).powi(2)).sum();
             sum_squared_diff / (self.frame_times.len() - 1) as f32
         } else {
             0.0
         };
-        
-        let frame_time_consistency = if variance < 0.0001 { "EXCELLENT" } 
-                                   else if variance < 0.001 { "GOOD" }
-                                   else { "POOR" };
-        
+
+        let frame_time_consistency = if variance < 0.0001 {
+            "EXCELLENT"
+        } else if variance < 0.001 {
+            "GOOD"
+        } else {
+            "POOR"
+        };
+
         format!(
             "Frame Analysis:\n  Avg: {:.2}ms ({:.1}fps)\n  Min: {:.2}ms\n  Max: {:.2}ms\n  Variance: {:.6}\n  Consistency: {}\n  VSync: {}",
             avg_frame_time * 1000.0,
@@ -222,7 +222,11 @@ impl AdvancedWindowDemo {
             max_frame_time * 1000.0,
             variance,
             frame_time_consistency,
-            if is_likely_vsynced { "LIKELY ON" } else { "LIKELY OFF" }
+            if is_likely_vsynced {
+                "LIKELY ON"
+            } else {
+                "LIKELY OFF"
+            }
         )
     }
 }
@@ -306,14 +310,15 @@ impl engine_2d::animation::Animation for AdvancedWindowDemo {
     fn name(&self) -> &str {
         "Advanced Window Demo"
     }
-    
+
     fn handle_event(&mut self, event: &WindowEvent) {
         match event {
             WindowEvent::Glfw(glfw::WindowEvent::Key(key, _scancode, action, _mods)) => {
                 // Convert GLFW key to our KeyCode
                 if let Some(key_code) = glfw_key_to_keycode(*key) {
                     let pressed = *action == Action::Press || *action == Action::Repeat;
-                    self.input_manager.set_raw_input(PhysicalInput::Keyboard(key_code), pressed);
+                    self.input_manager
+                        .set_raw_input(PhysicalInput::Keyboard(key_code), pressed);
                 }
             }
             _ => {
@@ -321,24 +326,33 @@ impl engine_2d::animation::Animation for AdvancedWindowDemo {
             }
         }
     }
-    
-    fn update(&mut self, _sprite_renderer: Option<&mut SpriteRenderer>, elapsed_time: f32, delta_time: f32, window_manager: Option<&mut WindowManager>, text_renderer: Option<&mut engine_2d::render::text::TextRenderer>) {
+
+    fn update(
+        &mut self,
+        _sprite_renderer: Option<&mut SpriteRenderer>,
+        elapsed_time: f32,
+        delta_time: f32,
+        window_manager: Option<&mut WindowManager>,
+        text_renderer: Option<&mut engine_2d::render::text::TextRenderer>,
+    ) {
         // Update input
         self.input_manager.update(delta_time);
-        
+
         // Track frame times for VSync analysis
         self.track_frame_time(delta_time);
-        
+
         // Update VSync test pattern for visual tearing detection
         self.vsync_test_pattern += delta_time * 2.0; // Rotate pattern
-        
+
         // Print instructions and VSync analysis periodically (every 5 seconds)
         if elapsed_time - self.last_instruction_time >= 5.0 {
-            println!("Window Demo Controls: F=Fullscreen, V=VSync, M=Minimize, H=Cursor, C=Mouse, T=Center, A=Analyze");
+            println!(
+                "Window Demo Controls: F=Fullscreen, V=VSync, M=Minimize, H=Cursor, C=Mouse, T=Center, A=Analyze"
+            );
             println!("{}", self.get_vsync_analysis());
             self.last_instruction_time = elapsed_time;
         }
-        
+
         // Check for action inputs and perform window operations
         if let Some(wm) = window_manager {
             if self.is_action_just_pressed("TOGGLE_FULLSCREEN") {
@@ -353,7 +367,14 @@ impl engine_2d::animation::Animation for AdvancedWindowDemo {
                 if let Err(e) = wm.set_vsync(!current_vsync) {
                     eprintln!("Failed to toggle VSync: {}", e);
                 } else {
-                    println!("VSync is now: {}", if !current_vsync { "ENABLED" } else { "DISABLED" });
+                    println!(
+                        "VSync is now: {}",
+                        if !current_vsync {
+                            "ENABLED"
+                        } else {
+                            "DISABLED"
+                        }
+                    );
                     println!("Watch for frame time changes in the next analysis...");
                 }
             }
@@ -378,57 +399,51 @@ impl engine_2d::animation::Animation for AdvancedWindowDemo {
             if self.is_action_just_pressed("ANALYZE_VSYNC") {
                 println!("A pressed - VSync Analysis:");
                 println!("{}", self.get_vsync_analysis());
-                println!("VSync Status: {}", if wm.is_vsync_enabled() { "ENABLED" } else { "DISABLED" });
+                println!(
+                    "VSync Status: {}",
+                    if wm.is_vsync_enabled() {
+                        "ENABLED"
+                    } else {
+                        "DISABLED"
+                    }
+                );
             }
-            
+
             // Render some text on screen to demonstrate text rendering
             if let Some(tr) = text_renderer {
                 // Load default font if not already loaded
                 if !tr.has_font("default") {
-                        if let Err(e) = tr.load_font("default", "assets/fonts/default.ttf", 64) {
+                    if let Err(e) = tr.load_font("default", "assets/fonts/default.ttf", 64) {
                         // Font loading failed, but that's okay for this demo
                         println!("Note: Font loading failed: {}", e);
                     }
                 }
-                
+
                 // Render some status text
                 if tr.has_font("default") {
-                    use engine_2d::render::simple_text_new::SimpleText;
+                    use engine_2d::render::text_utils::TextUtils;
                     use glam::Vec2;
-                    
-                    let status_text = format!("VSync: {}", if wm.is_vsync_enabled() { "ON" } else { "OFF" });
-                    let text = SimpleText::new(status_text, 10)
-                        .color((0.2, 0.6, 1.0)) // Blue color like info_text
-                        .position(Vec2::new(0.02, 0.95));
-                    
-                    // Convert to old system for rendering
-                    let _ = tr.font("default")
-                        .size(text.font_size)
-                        .color(text.color.0, text.color.1, text.color.2)
-                        .draw(&text.content, text.position.x, text.position.y);
-                    
+
+                    let status_text = format!(
+                        "VSync: {}",
+                        if wm.is_vsync_enabled() { "ON" } else { "OFF" }
+                    );
+                    let text = TextUtils::info_text(&status_text, Vec2::new(0.02, 0.95), "default");
+                    let _ = tr.render_text(&text);
+
                     let mode_text = format!("Mode: {:?}", wm.get_display_mode());
-                    let text2 = SimpleText::new(mode_text, 10)
-                        .color((0.2, 0.6, 1.0)) // Blue color like info_text
-                        .position(Vec2::new(0.02, 0.9));
-                    
-                    // Convert to old system for rendering
-                    let _ = tr.font("default")
-                        .size(text2.font_size)
-                        .color(text2.color.0, text2.color.1, text2.color.2)
-                        .draw(&text2.content, text2.position.x, text2.position.y);
+                    let text2 = TextUtils::info_text(&mode_text, Vec2::new(0.02, 0.9), "default");
+                    let _ = tr.render_text(&text2);
                 }
             }
         }
     }
-    
-    
 }
 
 #[cfg(feature = "opengl")]
 fn main() {
     env_logger::init();
-    
+
     println!("Advanced Window Features Demo");
     println!("=============================");
     println!("Controls:");
@@ -441,7 +456,7 @@ fn main() {
     println!("  A   - Analyze VSync Performance");
     println!("  ESC - Exit");
     println!();
-    
+
     let config = EngineConfig {
         window_title: "Advanced Window Demo".to_string(),
         window_width: 1024,
@@ -450,12 +465,10 @@ fn main() {
         show_fps: true,
         vsync: true,
         fullscreen: false,
-        viewport: engine_2d::engine::config::ViewportConfig::ui_based(),
-        fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
-    
+
     let demo = AdvancedWindowDemo::new();
-    
+
     let mut engine = match Engine::new_with_config_and_animation(config, Box::new(demo)) {
         Ok(engine) => engine,
         Err(e) => {
@@ -463,7 +476,7 @@ fn main() {
             return;
         }
     };
-    
+
     // Run the demo
     if let Err(e) = engine.run() {
         eprintln!("Engine error: {}", e);

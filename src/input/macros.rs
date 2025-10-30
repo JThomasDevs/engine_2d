@@ -1,14 +1,12 @@
 /// Macro system for defining game actions
-/// 
+///
 /// This module provides macros for easily defining game actions with rich metadata
 /// and type-safe access patterns.
-
 // Macro definitions - no imports needed here
-
 /// Define game actions with rich metadata
-/// 
+///
 /// This macro generates type-safe action definitions with the following syntax:
-/// 
+///
 /// ```rust
 /// define_actions! {
 ///     ACTION_ID: {
@@ -23,9 +21,9 @@
 ///     };
 /// }
 /// ```
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// define_actions! {
 ///     MOVE_FORWARD: {
@@ -62,7 +60,7 @@ macro_rules! define_actions {
         $(
             /// Action constant for type-safe access
             pub const $action_id: &str = stringify!($action_id);
-            
+
             paste::paste! {
                 #[allow(non_snake_case)]
                 pub fn [<$action_id _action>]() -> GameAction {
@@ -82,28 +80,28 @@ macro_rules! define_actions {
                 }
             }
         )*
-        
+
         /// Get all defined actions
         pub fn get_all_actions() -> Vec<GameAction> {
             paste::paste! {
                 vec![$([<$action_id _action>]()),*]
             }
         }
-        
+
         /// Get actions by category
         pub fn get_actions_by_category(category: ActionCategory) -> Vec<GameAction> {
             get_all_actions().into_iter()
                 .filter(|action| action.category == category)
                 .collect()
         }
-        
+
         /// Get actions by tag
         pub fn get_actions_by_tag(tag: &str) -> Vec<GameAction> {
             get_all_actions().into_iter()
                 .filter(|action| action.metadata.tags.contains(&tag.to_string()))
                 .collect()
         }
-        
+
         /// Get action by ID
         pub fn get_action_by_id(action_id: &str) -> Option<GameAction> {
             get_all_actions().into_iter()
@@ -119,17 +117,17 @@ macro_rules! input_bindings {
     (key($key:ident)) => {
         InputBinding::Single(PhysicalInput::Keyboard(KeyCode::$key))
     };
-    
+
     // Single mouse button
     (mouse($button:ident)) => {
         InputBinding::Single(PhysicalInput::Mouse(MouseButton::$button))
     };
-    
+
     // Single gamepad button
     (gamepad($button:ident)) => {
         InputBinding::Single(PhysicalInput::Gamepad(GamepadButton::$button))
     };
-    
+
     // Mouse axis with threshold and deadzone
     (mouse_axis($axis:ident, $threshold:expr, $deadzone:expr)) => {
         InputBinding::Analog {
@@ -138,7 +136,7 @@ macro_rules! input_bindings {
             deadzone: $deadzone,
         }
     };
-    
+
     // Gamepad axis with threshold and deadzone
     (gamepad_axis($axis:ident, $threshold:expr, $deadzone:expr)) => {
         InputBinding::Analog {
@@ -147,7 +145,7 @@ macro_rules! input_bindings {
             deadzone: $deadzone,
         }
     };
-    
+
     // Modifier + key combination
     (modifier($mod:ident, $key:ident)) => {
         InputBinding::Modified {
@@ -155,7 +153,7 @@ macro_rules! input_bindings {
             key: PhysicalInput::Keyboard(KeyCode::$key),
         }
     };
-    
+
     // Multiple simultaneous inputs
     (combo($($input:expr),+)) => {
         InputBinding::Combo(vec![$($input),+])
@@ -168,13 +166,13 @@ macro_rules! action_categories {
     () => {
         pub mod categories {
             use super::*;
-            
+
             pub const MOVEMENT: ActionCategory = ActionCategory::Movement;
             pub const COMBAT: ActionCategory = ActionCategory::Combat;
             pub const UI: ActionCategory = ActionCategory::UI;
             pub const DEBUG: ActionCategory = ActionCategory::Debug;
             pub const INTERACTION: ActionCategory = ActionCategory::Interaction;
-            
+
             pub fn custom(name: &str) -> ActionCategory {
                 ActionCategory::Custom(name.to_string())
             }
@@ -188,7 +186,7 @@ macro_rules! input_types {
     () => {
         pub mod input_types {
             use super::*;
-            
+
             pub const DIGITAL: InputType = InputType::Digital;
             pub const ANALOG: InputType = InputType::Analog;
             pub const HYBRID: InputType = InputType::Hybrid;

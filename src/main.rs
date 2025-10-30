@@ -5,7 +5,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
     let mut engine = Engine::new()?;
     if let Err(e) = engine.run() {
-        eprintln!("Engine error: {}", e);
+        eprintln!("Engine error: {e}");
     }
     Ok(())
 }

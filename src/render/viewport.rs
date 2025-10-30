@@ -10,8 +10,12 @@ pub enum ValidationError {
 impl std::fmt::Display for ValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ValidationError::InvalidTextHeightFraction(msg) => write!(f, "Invalid text height fraction: {}", msg),
-            ValidationError::InvalidBaseFontSize(msg) => write!(f, "Invalid base font size: {}", msg),
+            ValidationError::InvalidTextHeightFraction(msg) => {
+                write!(f, "Invalid text height fraction: {msg}")
+            }
+            ValidationError::InvalidBaseFontSize(msg) => {
+                write!(f, "Invalid base font size: {msg}")
+            }
         }
     }
 }
@@ -38,7 +42,7 @@ impl Viewport {
     pub fn new() -> Self {
         Self {
             logical_bounds: (-1.0, 1.0, -1.0, 1.0), // Default OpenGL NDC
-            text_height_fraction: 0.05, // 5% of viewport height
+            text_height_fraction: 0.05,             // 5% of viewport height
             base_font_size: 16.0,
             viewport_independent_text: true, // Default to viewport-independent text
         }
@@ -55,92 +59,96 @@ impl Viewport {
     }
 
     /// Set the text height as a fraction of the logical viewport height
-    /// 
+    ///
     /// # Arguments
     /// * `fraction` - Must be greater than 0.0 and less than or equal to 1.0
-    /// 
+    ///
     /// # Returns
     /// * `Ok(())` if the fraction is valid
     /// * `Err(ValidationError)` if the fraction is invalid
     pub fn set_text_height_fraction(&mut self, fraction: f32) -> Result<(), ValidationError> {
         if fraction <= 0.0 {
-            return Err(ValidationError::InvalidTextHeightFraction(
-                format!("Text height fraction must be greater than 0.0, got {}", fraction)
-            ));
+            return Err(ValidationError::InvalidTextHeightFraction(format!(
+                "Text height fraction must be greater than 0.0, got {fraction}"
+            )));
         }
         if fraction > 1.0 {
-            return Err(ValidationError::InvalidTextHeightFraction(
-                format!("Text height fraction must be less than or equal to 1.0, got {}", fraction)
-            ));
+            return Err(ValidationError::InvalidTextHeightFraction(format!(
+                "Text height fraction must be less than or equal to 1.0, got {fraction}"
+            )));
         }
         self.text_height_fraction = fraction;
         Ok(())
     }
 
     /// Set the base font size for normalization
-    /// 
+    ///
     /// # Arguments
     /// * `size` - Must be greater than 0.0
-    /// 
+    ///
     /// # Returns
     /// * `Ok(())` if the size is valid
     /// * `Err(ValidationError)` if the size is invalid
     pub fn set_base_font_size(&mut self, size: f32) -> Result<(), ValidationError> {
         if size <= 0.0 {
-            return Err(ValidationError::InvalidBaseFontSize(
-                format!("Base font size must be greater than 0.0, got {}", size)
-            ));
+            return Err(ValidationError::InvalidBaseFontSize(format!(
+                "Base font size must be greater than 0.0, got {size}"
+            )));
         }
         self.base_font_size = size;
         Ok(())
     }
-    
+
     /// Set whether text should be viewport-independent or viewport-relative
-    /// 
+    ///
     /// # Arguments
     /// * `independent` - If true, text size stays constant regardless of viewport scale.
-    ///                   If false, text scales with viewport (original behavior).
+    ///   If false, text scales with viewport (original behavior).
     pub fn set_viewport_independent_text(&mut self, independent: bool) {
         self.viewport_independent_text = independent;
     }
-    
+
     /// Convert from top-left origin coordinates to viewport coordinates
-    /// 
+    ///
     /// This is useful for UI text positioning where (0,0) is top-left.
     /// The input coordinates are in the range [0,1] where:
     /// - (0,0) = top-left corner
     /// - (1,1) = bottom-right corner
-    /// 
+    ///
     /// # Arguments
     /// * `top_left_pos` - Position in top-left coordinate system (0,0 = top-left, 1,1 = bottom-right)
-    /// 
+    ///
     /// # Returns
     /// * Position in viewport coordinate system
     pub fn top_left_to_viewport(&self, top_left_pos: Vec2) -> Vec2 {
         let x_range = self.logical_bounds.1 - self.logical_bounds.0;
         let y_range = self.logical_bounds.3 - self.logical_bounds.2;
-        
+
         // Convert from top-left (0,0) to viewport coordinates
         let viewport_x = self.logical_bounds.0 + top_left_pos.x * x_range;
         let viewport_y = self.logical_bounds.3 - top_left_pos.y * y_range; // Flip Y axis
-        
+
         Vec2::new(viewport_x, viewport_y)
     }
 
-    /// Calculate the scale factor for text rendering based on font size
-    /// Returns a direct scale factor where 1.0 = normal size, 2.0 = double size, etc.
+    /// Calculate the scale factor for a given font size
+    /// This ensures consistent text appearance across different coordinate systems
     pub fn calculate_scale_factor(&self, font_size: f32) -> f32 {
         if self.viewport_independent_text {
-            // Viewport-independent: font_size directly corresponds to pixel size
-            font_size / self.base_font_size
+            // Viewport-independent mode: text size stays constant regardless of viewport scale
+            // We use a fixed reference viewport size (NDC: -1 to 1 = 2 units) for consistent scaling
+            let reference_viewport_height = 2.0; // NDC coordinate system height
+
+            // Calculate what the target height should be based on the reference viewport
+            let font_size_fraction = font_size / self.base_font_size;
+            let base_font_fraction = self.text_height_fraction;
+            reference_viewport_height * base_font_fraction * font_size_fraction
         } else {
-            // Viewport-relative: scale based on text_height_fraction and viewport height
-            // The text_height_fraction represents what fraction of viewport height the base font size should occupy
-            let viewport_height = self.logical_bounds.3 - self.logical_bounds.2;
-            let base_target_pixel = self.text_height_fraction * viewport_height;
-            let base_scale = base_target_pixel / self.base_font_size;
-            // Scale by the ratio of requested font size to base font size
-            base_scale * (font_size / self.base_font_size)
+            // Viewport-relative mode: text scales with viewport (original behavior)
+            let logical_height = self.logical_bounds.3 - self.logical_bounds.2; // y_max - y_min
+            let target_height = logical_height * self.text_height_fraction;
+            let font_ratio = font_size / self.base_font_size;
+            target_height / font_ratio
         }
     }
 
@@ -148,11 +156,11 @@ impl Viewport {
     pub fn logical_to_ndc(&self, logical_pos: Vec2) -> Vec2 {
         let x_range = self.logical_bounds.1 - self.logical_bounds.0;
         let y_range = self.logical_bounds.3 - self.logical_bounds.2;
-        
+
         // Convert from logical space to [0,1] then to [-1,1] NDC
         let normalized_x = (logical_pos.x - self.logical_bounds.0) / x_range;
         let normalized_y = (logical_pos.y - self.logical_bounds.2) / y_range;
-        
+
         Vec2::new(normalized_x * 2.0 - 1.0, normalized_y * 2.0 - 1.0)
     }
 
@@ -160,20 +168,23 @@ impl Viewport {
     pub fn ndc_to_logical(&self, ndc_pos: Vec2) -> Vec2 {
         let x_range = self.logical_bounds.1 - self.logical_bounds.0;
         let y_range = self.logical_bounds.3 - self.logical_bounds.2;
-        
+
         // Convert from [-1,1] NDC to [0,1] then to logical space
         let normalized_x = (ndc_pos.x + 1.0) / 2.0;
         let normalized_y = (ndc_pos.y + 1.0) / 2.0;
-        
+
         Vec2::new(
             self.logical_bounds.0 + normalized_x * x_range,
-            self.logical_bounds.2 + normalized_y * y_range
+            self.logical_bounds.2 + normalized_y * y_range,
         )
     }
 
     /// Get the logical coordinate ranges
     pub fn get_logical_ranges(&self) -> (f32, f32) {
-        (self.logical_bounds.1 - self.logical_bounds.0, self.logical_bounds.3 - self.logical_bounds.2)
+        (
+            self.logical_bounds.1 - self.logical_bounds.0,
+            self.logical_bounds.3 - self.logical_bounds.2,
+        )
     }
 
     /// Get the logical bounds
@@ -190,7 +201,7 @@ impl Viewport {
     pub fn get_center(&self) -> Vec2 {
         Vec2::new(
             (self.logical_bounds.0 + self.logical_bounds.1) / 2.0,
-            (self.logical_bounds.2 + self.logical_bounds.3) / 2.0
+            (self.logical_bounds.2 + self.logical_bounds.3) / 2.0,
         )
     }
 
@@ -198,7 +209,7 @@ impl Viewport {
     pub fn get_size(&self) -> Vec2 {
         Vec2::new(
             self.logical_bounds.1 - self.logical_bounds.0,
-            self.logical_bounds.3 - self.logical_bounds.2
+            self.logical_bounds.3 - self.logical_bounds.2,
         )
     }
 }

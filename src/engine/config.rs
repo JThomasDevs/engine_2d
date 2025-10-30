@@ -36,7 +36,7 @@ impl ViewportConfig {
             viewport_independent_text: true,
         }
     }
-    
+
     /// Create a viewport config for traditional OpenGL NDC coordinates (-1 to 1)
     pub fn ndc() -> Self {
         Self {
@@ -46,7 +46,7 @@ impl ViewportConfig {
             viewport_independent_text: false, // Use viewport-relative scaling
         }
     }
-    
+
     /// Create a viewport config for pixel coordinates (0 to width, 0 to height)
     pub fn pixel_based(width: f32, height: f32) -> Self {
         Self {
@@ -56,7 +56,7 @@ impl ViewportConfig {
             viewport_independent_text: false, // Pixel-based should be viewport-relative
         }
     }
-    
+
     /// Create a viewport config for UI coordinates (0 to 1, 0 to 1)
     pub fn ui_based() -> Self {
         Self {

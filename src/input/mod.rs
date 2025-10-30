@@ -1,15 +1,14 @@
-pub mod keyboard;
-pub mod mouse;
-pub mod gamepad;
-pub mod types;
-pub mod manager;
-pub mod macros;
 pub mod actions;
+pub mod gamepad;
+pub mod keyboard;
+pub mod macros;
+pub mod manager;
+pub mod mouse;
+pub mod types;
 
-pub use keyboard::{KeyboardInput, KeyboardEvent};
-pub use mouse::{MouseInput, MouseEvent};
-pub use gamepad::{GamepadInput, GamepadEvent, GamepadState};
-pub use types::*;
-pub use manager::InputManager;
 pub use actions::*;
-
+pub use gamepad::{GamepadEvent, GamepadInput, GamepadState};
+pub use keyboard::{KeyboardEvent, KeyboardInput};
+pub use manager::InputManager;
+pub use mouse::{MouseEvent, MouseInput};
+pub use types::*;

@@ -1,10 +1,9 @@
 use std::hash::{Hash, Hasher};
 
 /// Core input system types for the game engine
-/// 
+///
 /// This module provides the foundational types for a flexible, type-safe
 /// input system that supports customizable keybindings and action mapping.
-
 /// Represents a game action with rich metadata
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct GameAction {
@@ -30,13 +29,13 @@ pub enum ActionCategory {
 /// Types of input that actions can handle
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum InputType {
-    Digital,  // On/off inputs (keys, buttons)
-    Analog,   // Continuous inputs (mouse, gamepad sticks)
-    Hybrid,   // Can be both digital and analog
+    Digital, // On/off inputs (keys, buttons)
+    Analog,  // Continuous inputs (mouse, gamepad sticks)
+    Hybrid,  // Can be both digital and analog
 }
 
 /// Rich metadata for actions
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub struct ActionMetadata {
     pub description: Option<String>,
     pub tags: Vec<String>,
@@ -44,32 +43,21 @@ pub struct ActionMetadata {
     pub context_required: Option<String>,
 }
 
-impl Default for ActionMetadata {
-    fn default() -> Self {
-        Self {
-            description: None,
-            tags: Vec::new(),
-            priority: 0,
-            context_required: None,
-        }
-    }
-}
-
 /// Input bindings that map physical inputs to actions
 #[derive(Clone, PartialEq, Debug)]
 pub enum InputBinding {
     /// Single input (key, button, axis)
     Single(PhysicalInput),
-    
+
     /// Modifier + key combination (e.g., Ctrl+S)
     Modified {
         modifier: PhysicalInput,
         key: PhysicalInput,
     },
-    
+
     /// Multiple simultaneous inputs (e.g., Ctrl+Shift+D)
     Combo(Vec<PhysicalInput>),
-    
+
     /// Analog input with threshold and deadzone
     Analog {
         input: PhysicalInput,
@@ -99,7 +87,11 @@ impl Hash for InputBinding {
                     input.hash(state);
                 }
             }
-            InputBinding::Analog { input, threshold, deadzone } => {
+            InputBinding::Analog {
+                input,
+                threshold,
+                deadzone,
+            } => {
                 3u8.hash(state);
                 input.hash(state);
                 // Convert f32 to u32 for hashing
@@ -124,35 +116,122 @@ pub enum PhysicalInput {
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum KeyCode {
     // Letters
-    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-    
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+
     // Numbers
-    Key0, Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8, Key9,
-    
+    Key0,
+    Key1,
+    Key2,
+    Key3,
+    Key4,
+    Key5,
+    Key6,
+    Key7,
+    Key8,
+    Key9,
+
     // Function keys
-    F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-    
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
+
     // Special keys
-    Space, Enter, Escape, Tab, Backspace, Delete,
-    LeftShift, RightShift, LeftCtrl, RightCtrl, LeftAlt, RightAlt,
-    LeftSuper, RightSuper, // Windows/Command keys
-    
+    Space,
+    Enter,
+    Escape,
+    Tab,
+    Backspace,
+    Delete,
+    LeftShift,
+    RightShift,
+    LeftCtrl,
+    RightCtrl,
+    LeftAlt,
+    RightAlt,
+    LeftSuper,
+    RightSuper, // Windows/Command keys
+
     // Arrow keys
-    Up, Down, Left, Right,
-    
+    Up,
+    Down,
+    Left,
+    Right,
+
     // Other
-    CapsLock, NumLock, ScrollLock,
-    Insert, Home, End, PageUp, PageDown,
-    PrintScreen, Pause,
-    
+    CapsLock,
+    NumLock,
+    ScrollLock,
+    Insert,
+    Home,
+    End,
+    PageUp,
+    PageDown,
+    PrintScreen,
+    Pause,
+
     // Numpad
-    Numpad0, Numpad1, Numpad2, Numpad3, Numpad4,
-    Numpad5, Numpad6, Numpad7, Numpad8, Numpad9,
-    NumpadAdd, NumpadSubtract, NumpadMultiply, NumpadDivide, NumpadEnter,
-    
+    Numpad0,
+    Numpad1,
+    Numpad2,
+    Numpad3,
+    Numpad4,
+    Numpad5,
+    Numpad6,
+    Numpad7,
+    Numpad8,
+    Numpad9,
+    NumpadAdd,
+    NumpadSubtract,
+    NumpadMultiply,
+    NumpadDivide,
+    NumpadEnter,
+
     // Punctuation
-    Semicolon, Apostrophe, Grave, Comma, Period, Slash, Backslash,
-    LeftBracket, RightBracket, Minus, Equals,
+    Semicolon,
+    Apostrophe,
+    Grave,
+    Comma,
+    Period,
+    Slash,
+    Backslash,
+    LeftBracket,
+    RightBracket,
+    Minus,
+    Equals,
 }
 
 /// Mouse button types
@@ -161,8 +240,8 @@ pub enum MouseButton {
     Left,
     Right,
     Middle,
-    Forward,  // Mouse 4
-    Back,     // Mouse 5
+    Forward,   // Mouse 4
+    Back,      // Mouse 5
     Other(u8), // Additional mouse buttons
 }
 
@@ -179,34 +258,34 @@ pub enum MouseAxis {
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum GamepadButton {
     // Face buttons (PlayStation: X, Square, Circle, Triangle)
-    South,    // X/A button
-    East,     // Circle/B button  
-    West,     // Square/X button
-    North,    // Triangle/Y button
-    
+    South, // X/A button
+    East,  // Circle/B button
+    West,  // Square/X button
+    North, // Triangle/Y button
+
     // Xbox-style face buttons (for compatibility)
-    A,        // Same as South
-    B,        // Same as East
-    X,        // Same as West
-    Y,        // Same as North
-    
+    A, // Same as South
+    B, // Same as East
+    X, // Same as West
+    Y, // Same as North
+
     // Shoulder buttons
     LeftTrigger,
     RightTrigger,
     LeftShoulder,
     RightShoulder,
-    
+
     // D-pad
     DPadUp,
     DPadDown,
     DPadLeft,
     DPadRight,
-    
+
     // Center buttons
     Start,
     Select,
-    Guide,    // Xbox/PS button
-    
+    Guide, // Xbox/PS button
+
     // Sticks
     LeftStick,
     RightStick,
@@ -226,10 +305,10 @@ pub enum GamepadAxis {
 /// Input state for actions
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum InputState {
-    Pressed,    // Just pressed this frame
-    Held,       // Held down
-    Released,   // Just released this frame
-    Idle,       // Not pressed
+    Pressed,  // Just pressed this frame
+    Held,     // Held down
+    Released, // Just released this frame
+    Idle,     // Not pressed
 }
 
 /// Input context for managing different game states
@@ -251,7 +330,7 @@ impl Hash for InputContext {
         let mut enabled: Vec<_> = self.enabled_actions.iter().collect();
         enabled.sort();
         enabled.hash(state);
-        
+
         let mut disabled: Vec<_> = self.disabled_actions.iter().collect();
         disabled.sort();
         disabled.hash(state);
@@ -267,12 +346,12 @@ impl InputContext {
             disabled_actions: std::collections::HashSet::new(),
         }
     }
-    
+
     pub fn enable_action(mut self, action_id: String) -> Self {
         self.enabled_actions.insert(action_id);
         self
     }
-    
+
     pub fn disable_action(mut self, action_id: String) -> Self {
         self.disabled_actions.insert(action_id);
         self

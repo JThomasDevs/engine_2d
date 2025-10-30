@@ -49,10 +49,7 @@ pub mod vector {
     pub fn rotate(v: Vec2, angle: f32) -> Vec2 {
         let cos = angle.cos();
         let sin = angle.sin();
-        Vec2::new(
-            v.x * cos - v.y * sin,
-            v.x * sin + v.y * cos,
-        )
+        Vec2::new(v.x * cos - v.y * sin, v.x * sin + v.y * cos)
     }
 
     /// Reflect a vector off a surface with the given normal
@@ -185,7 +182,11 @@ pub mod matrix {
         /// Create a translation matrix
         pub fn translation(translation: Vec2) -> Self {
             Self {
-                m: [[1.0, 0.0, translation.x], [0.0, 1.0, translation.y], [0.0, 0.0, 1.0]],
+                m: [
+                    [1.0, 0.0, translation.x],
+                    [0.0, 1.0, translation.y],
+                    [0.0, 0.0, 1.0],
+                ],
             }
         }
 
@@ -598,9 +599,18 @@ pub mod geometry {
 
         /// Check if this circle intersects with a rectangle
         pub fn intersects_rect(&self, rect: &Rectangle) -> bool {
-            let closest_x = utils::clamp(self.center.x, rect.position.x, rect.position.x + rect.size.x);
-            let closest_y = utils::clamp(self.center.y, rect.position.y, rect.position.y + rect.size.y);
-            let distance_squared = vector::distance_squared(self.center, Vec2::new(closest_x, closest_y));
+            let closest_x = utils::clamp(
+                self.center.x,
+                rect.position.x,
+                rect.position.x + rect.size.x,
+            );
+            let closest_y = utils::clamp(
+                self.center.y,
+                rect.position.y,
+                rect.position.y + rect.size.y,
+            );
+            let distance_squared =
+                vector::distance_squared(self.center, Vec2::new(closest_x, closest_y));
             distance_squared <= self.radius * self.radius
         }
     }
@@ -632,15 +642,15 @@ pub mod geometry {
         pub fn closest_point(&self, point: Vec2) -> Vec2 {
             let line_vec = self.direction();
             let point_vec = point - self.start;
-            
+
             let line_length_squared = line_vec.length_squared();
             if line_length_squared < 1e-6 {
                 return self.start;
             }
-            
+
             let t = vector::dot(point_vec, line_vec) / line_length_squared;
             let t_clamped = utils::clamp(t, 0.0, 1.0);
-            
+
             self.start + line_vec * t_clamped
         }
 
@@ -664,8 +674,11 @@ pub mod geometry {
             let t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / denom;
             let u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / denom;
 
-            if t >= 0.0 && t <= 1.0 && u >= 0.0 && u <= 1.0 {
-                Some(Vec2::new(p1.x + t * (p2.x - p1.x), p1.y + t * (p2.y - p1.y)))
+            if (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u) {
+                Some(Vec2::new(
+                    p1.x + t * (p2.x - p1.x),
+                    p1.y + t * (p2.y - p1.y),
+                ))
             } else {
                 None
             }
@@ -725,7 +738,7 @@ pub mod geometry {
 
         let closest_x = utils::clamp(point.x, rect.position.x, rect.position.x + rect.size.x);
         let closest_y = utils::clamp(point.y, rect.position.y, rect.position.y + rect.size.y);
-        
+
         vector::distance(point, Vec2::new(closest_x, closest_y))
     }
 
@@ -741,7 +754,11 @@ pub mod physics {
     use super::*;
 
     /// Calculate velocity from position change over time
-    pub fn calculate_velocity(initial_position: Vec2, final_position: Vec2, delta_time: f32) -> Vec2 {
+    pub fn calculate_velocity(
+        initial_position: Vec2,
+        final_position: Vec2,
+        delta_time: f32,
+    ) -> Vec2 {
         if delta_time <= 0.0 {
             return Vec2::ZERO;
         }
@@ -749,7 +766,11 @@ pub mod physics {
     }
 
     /// Calculate acceleration from velocity change over time
-    pub fn calculate_acceleration(initial_velocity: Vec2, final_velocity: Vec2, delta_time: f32) -> Vec2 {
+    pub fn calculate_acceleration(
+        initial_velocity: Vec2,
+        final_velocity: Vec2,
+        delta_time: f32,
+    ) -> Vec2 {
         if delta_time <= 0.0 {
             return Vec2::ZERO;
         }
@@ -760,7 +781,7 @@ pub mod physics {
     pub fn apply_friction(velocity: Vec2, friction_coefficient: f32, delta_time: f32) -> Vec2 {
         let friction_force = velocity * friction_coefficient * delta_time;
         let new_velocity = velocity - friction_force;
-        
+
         // Stop very small velocities to prevent jittering
         if new_velocity.length() < 0.01 {
             Vec2::ZERO
@@ -776,16 +797,19 @@ pub mod physics {
     }
 
     /// Calculate bounce reflection with energy loss
-    pub fn calculate_bounce(incident_velocity: Vec2, surface_normal: Vec2, restitution: f32) -> Vec2 {
+    pub fn calculate_bounce(
+        incident_velocity: Vec2,
+        surface_normal: Vec2,
+        restitution: f32,
+    ) -> Vec2 {
         let normal = vector::normalize(surface_normal);
         let velocity_along_normal = vector::dot(incident_velocity, normal);
-        
+
         if velocity_along_normal > 0.0 {
             return incident_velocity; // Already moving away from surface
         }
-        
-        let reflected_velocity = incident_velocity - (1.0 + restitution) * velocity_along_normal * normal;
-        reflected_velocity
+
+        incident_velocity - (1.0 + restitution) * velocity_along_normal * normal
     }
 
     /// Calculate elastic collision between two objects
@@ -797,30 +821,30 @@ pub mod physics {
         collision_normal: Vec2,
     ) -> (Vec2, Vec2) {
         let normal = vector::normalize(collision_normal);
-        
+
         // Relative velocity along collision normal
         let relative_velocity = velocity1 - velocity2;
         let velocity_along_normal = vector::dot(relative_velocity, normal);
-        
+
         // Do not resolve if velocities are separating
         if velocity_along_normal > 0.0 {
             return (velocity1, velocity2);
         }
-        
+
         // Calculate restitution (elasticity)
         let restitution = 1.0; // Perfectly elastic collision
-        
+
         // Calculate impulse scalar
         let mut impulse_scalar = -(1.0 + restitution) * velocity_along_normal;
         impulse_scalar /= (1.0 / mass1) + (1.0 / mass2);
-        
+
         // Calculate impulse vector
         let impulse = impulse_scalar * normal;
-        
+
         // Apply impulse to velocities
         let new_velocity1 = velocity1 + impulse / mass1;
         let new_velocity2 = velocity2 - impulse / mass2;
-        
+
         (new_velocity1, new_velocity2)
     }
 
@@ -834,14 +858,14 @@ pub mod physics {
     ) -> Vec2 {
         let distance_vec = position2 - position1;
         let distance = distance_vec.length();
-        
+
         if distance < 1e-6 {
             return Vec2::ZERO; // Avoid division by zero
         }
-        
+
         let force_magnitude = gravitational_constant * mass1 * mass2 / (distance * distance);
         let force_direction = vector::normalize(distance_vec);
-        
+
         force_direction * force_magnitude
     }
 
@@ -854,15 +878,15 @@ pub mod physics {
     ) -> Vec2 {
         let distance_vec = position2 - position1;
         let distance = distance_vec.length();
-        
+
         if distance < 1e-6 {
             return Vec2::ZERO; // Avoid division by zero
         }
-        
+
         let displacement = distance - rest_length;
         let force_magnitude = -spring_constant * displacement;
         let force_direction = vector::normalize(distance_vec);
-        
+
         force_direction * force_magnitude
     }
 
@@ -870,14 +894,14 @@ pub mod physics {
     pub fn centripetal_force(velocity: Vec2, position: Vec2, center: Vec2, mass: f32) -> Vec2 {
         let speed = velocity.length();
         let radius = vector::distance(center, position);
-        
+
         if speed < 1e-6 || radius < 1e-6 {
             return Vec2::ZERO;
         }
-        
+
         let force_magnitude = mass * speed * speed / radius;
         let force_direction = vector::normalize(center - position); // Points toward center
-        
+
         force_direction * force_magnitude
     }
 
@@ -944,6 +968,7 @@ pub mod physics {
             Vec2::new(0.0, initial_velocity_y),
             Vec2::new(0.0, gravity_y),
             time_to_max,
-        ).y
+        )
+        .y
     }
 }

@@ -3,7 +3,7 @@ use engine_2d::engine::config::EngineConfig;
 #[test]
 fn test_engine_config_defaults() {
     let config = EngineConfig::default();
-    
+
     assert_eq!(config.window_title, "Rust 2D Engine");
     assert_eq!(config.window_width, 800);
     assert_eq!(config.window_height, 600);
@@ -26,7 +26,7 @@ fn test_engine_config_custom_values() {
         viewport: engine_2d::engine::config::ViewportConfig::default(),
         fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
-    
+
     assert_eq!(config.window_title, "My Game");
     assert_eq!(config.window_width, 1920);
     assert_eq!(config.window_height, 1080);
@@ -40,7 +40,7 @@ fn test_engine_config_custom_values() {
 fn test_engine_config_clone() {
     let config = EngineConfig::default();
     let cloned_config = config.clone();
-    
+
     assert_eq!(config.window_title, cloned_config.window_title);
     assert_eq!(config.window_width, cloned_config.window_width);
     assert_eq!(config.window_height, cloned_config.window_height);
@@ -54,7 +54,7 @@ fn test_engine_config_clone() {
 fn test_engine_config_debug() {
     let config = EngineConfig::default();
     let debug_str = format!("{:?}", config);
-    
+
     // Should contain the window title
     assert!(debug_str.contains("Rust 2D Engine"));
     // Should contain the window dimensions
@@ -69,7 +69,7 @@ fn test_fps_configuration() {
         target_fps: Some(60),
         ..Default::default()
     };
-    
+
     assert!(config.show_fps);
     assert_eq!(config.target_fps, Some(60));
 }
@@ -85,7 +85,7 @@ fn test_window_config_resizable() {
         vsync: true,
         ..Default::default()
     };
-    
+
     assert_eq!(config.window_title, "Resizable Window");
     assert_eq!(config.window_width, 1920);
     assert_eq!(config.window_height, 1080);

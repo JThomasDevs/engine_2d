@@ -4,12 +4,12 @@ use std::time::Instant;
 pub trait Event: Send + Sync + 'static {
     /// Get the timestamp when this event was created
     fn timestamp(&self) -> Instant;
-    
+
     /// Get the priority of this event (higher = more important)
     fn priority(&self) -> EventPriority {
         EventPriority::Normal
     }
-    
+
     /// Get a reference to this event as Any for downcasting
     fn as_any(&self) -> &dyn std::any::Any;
 }
@@ -26,11 +26,31 @@ pub enum EventPriority {
 /// Input events from keyboard, mouse, gamepad, etc.
 #[derive(Debug, Clone)]
 pub enum InputEvent {
-    KeyPress { key: String, timestamp: Instant },
-    KeyRelease { key: String, timestamp: Instant },
-    MouseMove { x: f32, y: f32, timestamp: Instant },
-    MouseClick { button: u32, x: f32, y: f32, timestamp: Instant },
-    GamepadButton { controller_id: u32, button: u32, pressed: bool, timestamp: Instant },
+    KeyPress {
+        key: String,
+        timestamp: Instant,
+    },
+    KeyRelease {
+        key: String,
+        timestamp: Instant,
+    },
+    MouseMove {
+        x: f32,
+        y: f32,
+        timestamp: Instant,
+    },
+    MouseClick {
+        button: u32,
+        x: f32,
+        y: f32,
+        timestamp: Instant,
+    },
+    GamepadButton {
+        controller_id: u32,
+        button: u32,
+        pressed: bool,
+        timestamp: Instant,
+    },
 }
 
 impl Event for InputEvent {
@@ -43,11 +63,11 @@ impl Event for InputEvent {
             InputEvent::GamepadButton { timestamp, .. } => *timestamp,
         }
     }
-    
+
     fn priority(&self) -> EventPriority {
         EventPriority::High // Input events are high priority
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -56,11 +76,35 @@ impl Event for InputEvent {
 /// Rendering events for drawing operations
 #[derive(Debug, Clone)]
 pub enum RenderEvent {
-    ClearScreen { r: f32, g: f32, b: f32, a: f32, timestamp: Instant },
-    DrawRectangle { x: f32, y: f32, width: f32, height: f32, color: (f32, f32, f32), timestamp: Instant },
-    DrawSprite { x: f32, y: f32, texture_id: u32, timestamp: Instant },
-    PresentFrame { timestamp: Instant },
-    ViewportUpdated { width: i32, height: i32, timestamp: Instant },
+    ClearScreen {
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+        timestamp: Instant,
+    },
+    DrawRectangle {
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
+        color: (f32, f32, f32),
+        timestamp: Instant,
+    },
+    DrawSprite {
+        x: f32,
+        y: f32,
+        texture_id: u32,
+        timestamp: Instant,
+    },
+    PresentFrame {
+        timestamp: Instant,
+    },
+    ViewportUpdated {
+        width: i32,
+        height: i32,
+        timestamp: Instant,
+    },
 }
 
 impl Event for RenderEvent {
@@ -73,11 +117,11 @@ impl Event for RenderEvent {
             RenderEvent::ViewportUpdated { timestamp, .. } => *timestamp,
         }
     }
-    
+
     fn priority(&self) -> EventPriority {
         EventPriority::Critical // Rendering events are critical for frame rate
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -86,10 +130,25 @@ impl Event for RenderEvent {
 /// Game logic events for AI, physics, game state, etc.
 #[derive(Debug, Clone)]
 pub enum LogicEvent {
-    UpdateGameState { delta_time: f32, timestamp: Instant },
-    EntityMoved { entity_id: u32, x: f32, y: f32, timestamp: Instant },
-    CollisionDetected { entity1: u32, entity2: u32, timestamp: Instant },
-    GameStateChanged { new_state: String, timestamp: Instant },
+    UpdateGameState {
+        delta_time: f32,
+        timestamp: Instant,
+    },
+    EntityMoved {
+        entity_id: u32,
+        x: f32,
+        y: f32,
+        timestamp: Instant,
+    },
+    CollisionDetected {
+        entity1: u32,
+        entity2: u32,
+        timestamp: Instant,
+    },
+    GameStateChanged {
+        new_state: String,
+        timestamp: Instant,
+    },
 }
 
 impl Event for LogicEvent {
@@ -101,11 +160,11 @@ impl Event for LogicEvent {
             LogicEvent::GameStateChanged { timestamp, .. } => *timestamp,
         }
     }
-    
+
     fn priority(&self) -> EventPriority {
         EventPriority::Normal
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -114,10 +173,24 @@ impl Event for LogicEvent {
 /// Audio events for sound and music
 #[derive(Debug, Clone)]
 pub enum AudioEvent {
-    PlaySound { sound_id: u32, volume: f32, timestamp: Instant },
-    PlayMusic { music_id: u32, volume: f32, timestamp: Instant },
-    StopSound { sound_id: u32, timestamp: Instant },
-    SetVolume { volume: f32, timestamp: Instant },
+    PlaySound {
+        sound_id: u32,
+        volume: f32,
+        timestamp: Instant,
+    },
+    PlayMusic {
+        music_id: u32,
+        volume: f32,
+        timestamp: Instant,
+    },
+    StopSound {
+        sound_id: u32,
+        timestamp: Instant,
+    },
+    SetVolume {
+        volume: f32,
+        timestamp: Instant,
+    },
 }
 
 impl Event for AudioEvent {
@@ -129,11 +202,11 @@ impl Event for AudioEvent {
             AudioEvent::SetVolume { timestamp, .. } => *timestamp,
         }
     }
-    
+
     fn priority(&self) -> EventPriority {
         EventPriority::Low // Audio events are low priority
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -142,10 +215,20 @@ impl Event for AudioEvent {
 /// System events for engine management
 #[derive(Debug, Clone)]
 pub enum SystemEvent {
-    Shutdown { timestamp: Instant },
-    Pause { timestamp: Instant },
-    Resume { timestamp: Instant },
-    SystemError { system_name: String, error: String, timestamp: Instant },
+    Shutdown {
+        timestamp: Instant,
+    },
+    Pause {
+        timestamp: Instant,
+    },
+    Resume {
+        timestamp: Instant,
+    },
+    SystemError {
+        system_name: String,
+        error: String,
+        timestamp: Instant,
+    },
 }
 
 impl Event for SystemEvent {
@@ -157,11 +240,11 @@ impl Event for SystemEvent {
             SystemEvent::SystemError { timestamp, .. } => *timestamp,
         }
     }
-    
+
     fn priority(&self) -> EventPriority {
         EventPriority::Critical // System events are critical
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }

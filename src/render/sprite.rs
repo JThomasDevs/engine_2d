@@ -1,7 +1,7 @@
-use std::rc::Rc;
 use super::gl_wrapper::GlWrapper;
-use super::texture::{TextureManager, TextureId};
+use super::texture::{TextureId, TextureManager};
 use glam::Vec2;
+use std::rc::Rc;
 
 /// A sprite that can be rendered with a texture
 #[derive(Debug, Clone)]
@@ -21,12 +21,17 @@ impl Sprite {
             position,
             size,
             tint_color: (1.0, 1.0, 1.0), // White tint (no color change)
-            alpha: 1.0, // Fully opaque
+            alpha: 1.0,                  // Fully opaque
         }
     }
 
     /// Create a new sprite with tint color
-    pub fn new_with_tint(texture_id: TextureId, position: Vec2, size: Vec2, tint_color: (f32, f32, f32)) -> Self {
+    pub fn new_with_tint(
+        texture_id: TextureId,
+        position: Vec2,
+        size: Vec2,
+        tint_color: (f32, f32, f32),
+    ) -> Self {
         Self {
             texture_id,
             position,
@@ -37,7 +42,13 @@ impl Sprite {
     }
 
     /// Create a new sprite with tint color and alpha
-    pub fn new_with_tint_alpha(texture_id: TextureId, position: Vec2, size: Vec2, tint_color: (f32, f32, f32), alpha: f32) -> Self {
+    pub fn new_with_tint_alpha(
+        texture_id: TextureId,
+        position: Vec2,
+        size: Vec2,
+        tint_color: (f32, f32, f32),
+        alpha: f32,
+    ) -> Self {
         Self {
             texture_id,
             position,
@@ -106,7 +117,10 @@ impl SpriteRenderer {
 
         // Create sprite geometry (quad with texture coordinates)
         let (sprite_vao, sprite_vbo) = Self::create_sprite_geometry(&self.gl)?;
-        println!("Created sprite geometry - VAO: {}, VBO: {}", sprite_vao, sprite_vbo);
+        println!(
+            "Created sprite geometry - VAO: {}, VBO: {}",
+            sprite_vao, sprite_vbo
+        );
 
         self.sprite_shader = Some(sprite_shader);
         self.sprite_vao = Some(sprite_vao);
@@ -119,7 +133,9 @@ impl SpriteRenderer {
 
     /// Get a reference to the texture manager
     pub fn texture_manager(&mut self) -> &mut TextureManager {
-        self.texture_manager.as_mut().expect("Sprite renderer not initialized")
+        self.texture_manager
+            .as_mut()
+            .expect("Sprite renderer not initialized")
     }
 
     /// Render a sprite
@@ -130,7 +146,10 @@ impl SpriteRenderer {
 
         let shader = self.sprite_shader.ok_or("Sprite shader not available")?;
         let vao = self.sprite_vao.ok_or("Sprite VAO not available")?;
-        let texture_manager = self.texture_manager.as_ref().ok_or("Texture manager not available")?;
+        let texture_manager = self
+            .texture_manager
+            .as_ref()
+            .ok_or("Texture manager not available")?;
 
         // Use sprite shader
         self.gl.use_program(shader)?;
@@ -145,9 +164,16 @@ impl SpriteRenderer {
         let alpha_loc = self.gl.get_uniform_location(shader, "alpha")?;
         let texture_loc = self.gl.get_uniform_location(shader, "texture_sampler")?;
 
-        self.gl.set_uniform_2f(pos_loc, sprite.position.x, sprite.position.y)?;
-        self.gl.set_uniform_2f(size_loc, sprite.size.x, sprite.size.y)?;
-        self.gl.set_uniform_3f(tint_loc, sprite.tint_color.0, sprite.tint_color.1, sprite.tint_color.2)?;
+        self.gl
+            .set_uniform_2f(pos_loc, sprite.position.x, sprite.position.y)?;
+        self.gl
+            .set_uniform_2f(size_loc, sprite.size.x, sprite.size.y)?;
+        self.gl.set_uniform_3f(
+            tint_loc,
+            sprite.tint_color.0,
+            sprite.tint_color.1,
+            sprite.tint_color.2,
+        )?;
         self.gl.set_uniform_1f(alpha_loc, sprite.alpha)?;
         self.gl.set_uniform_1i(texture_loc, 0)?; // Texture unit 0
 
@@ -212,16 +238,15 @@ impl SpriteRenderer {
         Ok(shader_program)
     }
 
-
     /// Create sprite geometry (quad with texture coordinates)
     fn create_sprite_geometry(gl: &GlWrapper) -> Result<(u32, u32), String> {
         // Vertices: position (x, y) + texture coordinates (u, v)
         let vertices: [f32; 16] = [
             // Position    // TexCoords
-            -0.5, -0.5,    0.0, 1.0,  // bottom-left
-             0.5, -0.5,    1.0, 1.0,  // bottom-right
-            -0.5,  0.5,    0.0, 0.0,  // top-left
-             0.5,  0.5,    1.0, 0.0,  // top-right
+            -0.5, -0.5, 0.0, 1.0, // bottom-left
+            0.5, -0.5, 1.0, 1.0, // bottom-right
+            -0.5, 0.5, 0.0, 0.0, // top-left
+            0.5, 0.5, 1.0, 0.0, // top-right
         ];
 
         let vao = gl.gen_vertex_array()?;
@@ -232,11 +257,25 @@ impl SpriteRenderer {
         gl.set_buffer_data(gl::ARRAY_BUFFER, &vertices, gl::STATIC_DRAW)?;
 
         // Position attribute (location 0)
-        gl.set_vertex_attrib_pointer(0, 2, gl::FLOAT, false, 4 * std::mem::size_of::<f32>() as i32, 0)?;
+        gl.set_vertex_attrib_pointer(
+            0,
+            2,
+            gl::FLOAT,
+            false,
+            4 * std::mem::size_of::<f32>() as i32,
+            0,
+        )?;
         gl.enable_vertex_attrib_array(0)?;
 
         // Texture coordinate attribute (location 1)
-        gl.set_vertex_attrib_pointer(1, 2, gl::FLOAT, false, 4 * std::mem::size_of::<f32>() as i32, 2 * std::mem::size_of::<f32>() as usize)?;
+        gl.set_vertex_attrib_pointer(
+            1,
+            2,
+            gl::FLOAT,
+            false,
+            4 * std::mem::size_of::<f32>() as i32,
+            2 * std::mem::size_of::<f32>() as usize,
+        )?;
         gl.enable_vertex_attrib_array(1)?;
 
         gl.bind_buffer(gl::ARRAY_BUFFER, 0)?;
@@ -244,7 +283,6 @@ impl SpriteRenderer {
 
         Ok((vao, vbo))
     }
-
 
     /// Cleanup resources
     pub fn cleanup(&mut self) {

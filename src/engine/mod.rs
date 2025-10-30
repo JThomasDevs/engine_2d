@@ -1,10 +1,10 @@
+pub mod config;
 pub mod core;
 #[cfg(feature = "opengl")]
 pub mod window;
-pub mod config;
 
-pub use core::Engine;
 pub use config::{EngineConfig, ViewportConfig};
+pub use core::Engine;
 
 #[cfg(test)]
 mod tests {
@@ -39,7 +39,7 @@ mod tests {
             viewport: ViewportConfig::ndc(), // Use NDC coordinates
             fallback_font_path: "assets/fonts/default.ttf".to_string(),
         };
-        
+
         assert_eq!(config.window_title, "Test Game");
         assert_eq!(config.window_width, 1024);
         assert_eq!(config.window_height, 768);
@@ -54,7 +54,7 @@ mod tests {
     fn test_engine_config_clone() {
         let config1 = EngineConfig::default();
         let config2 = config1.clone();
-        
+
         assert_eq!(config1.window_title, config2.window_title);
         assert_eq!(config1.window_width, config2.window_width);
         assert_eq!(config1.window_height, config2.window_height);
@@ -112,7 +112,7 @@ mod tests {
             assert_eq!(config.window_height, height);
         }
     }
-    
+
     #[test]
     fn test_viewport_config_defaults() {
         let viewport = ViewportConfig::default();
@@ -121,7 +121,7 @@ mod tests {
         assert_eq!(viewport.base_font_size, 16.0);
         assert_eq!(viewport.viewport_independent_text, true);
     }
-    
+
     #[test]
     fn test_viewport_config_ndc() {
         let viewport = ViewportConfig::ndc();
@@ -129,7 +129,7 @@ mod tests {
         assert_eq!(viewport.text_height_fraction, 0.05);
         assert_eq!(viewport.viewport_independent_text, true);
     }
-    
+
     #[test]
     fn test_viewport_config_ui_based() {
         let viewport = ViewportConfig::ui_based();
@@ -137,14 +137,14 @@ mod tests {
         assert_eq!(viewport.text_height_fraction, 0.05);
         assert_eq!(viewport.viewport_independent_text, true);
     }
-    
+
     #[test]
     fn test_viewport_config_pixel_based() {
         let viewport = ViewportConfig::pixel_based(1920.0, 1080.0);
         assert_eq!(viewport.logical_bounds, (0.0, 1920.0, 0.0, 1080.0));
         assert_eq!(viewport.viewport_independent_text, false);
     }
-    
+
     #[test]
     fn test_viewport_config_with_bounds() {
         let viewport = ViewportConfig::with_bounds(-5.0, 5.0, -3.0, 3.0);

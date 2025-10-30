@@ -1,6 +1,6 @@
 use gl;
-use std::ffi::CString;
 use glfw::{Glfw, Window as GlfwWindow};
+use std::ffi::CString;
 
 /// Safe wrapper around OpenGL functionality
 pub struct GlWrapper {
@@ -19,18 +19,22 @@ impl GlWrapper {
             window: None,
         }
     }
-    
+
     /// Initialize OpenGL context with GLFW window
     pub fn initialize(&mut self, window: &mut glfw::Window) -> Result<(), String> {
         // Load OpenGL function pointers using the provided window
-        gl::load_with(|s| window.get_proc_address(s).map_or(std::ptr::null(), |f| f as *const _));
-        
+        gl::load_with(|s| {
+            window
+                .get_proc_address(s)
+                .map_or(std::ptr::null(), |f| f as *const _)
+        });
+
         // Mark as initialized
         self.initialized = true;
-        
+
         Ok(())
     }
-    
+
     /// Check if OpenGL is initialized
     pub fn check_initialized(&self) -> Result<(), String> {
         if !self.initialized {
@@ -38,7 +42,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set the viewport dimensions
     pub fn set_viewport(&self, x: i32, y: i32, width: i32, height: i32) -> Result<(), String> {
         debug_assert!(self.initialized, "GlWrapper must be initialized before use");
@@ -48,7 +52,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set the clear color
     pub fn set_clear_color(&self, r: f32, g: f32, b: f32, a: f32) -> Result<(), String> {
         self.check_initialized()?;
@@ -57,7 +61,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Clear the color buffer
     pub fn clear_color_buffer(&self) -> Result<(), String> {
         self.check_initialized()?;
@@ -66,7 +70,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Enable blending
     pub fn enable_blending(&self) -> Result<(), String> {
         self.check_initialized()?;
@@ -75,7 +79,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set blend function
     pub fn set_blend_func(&self, src: u32, dst: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -84,7 +88,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Use a shader program
     pub fn use_program(&self, program: u32) -> Result<(), String> {
         debug_assert!(self.initialized, "GlWrapper must be initialized before use");
@@ -94,7 +98,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set a 3D float uniform
     pub fn set_uniform_3f(&self, location: i32, x: f32, y: f32, z: f32) -> Result<(), String> {
         self.check_initialized()?;
@@ -103,7 +107,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set a 2D float uniform
     pub fn set_uniform_2f(&self, location: i32, x: f32, y: f32) -> Result<(), String> {
         self.check_initialized()?;
@@ -112,17 +116,17 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Get uniform location
     pub fn get_uniform_location(&self, program: u32, name: &str) -> Result<i32, String> {
         self.check_initialized()?;
         unsafe {
-            let c_str = CString::new(name)
-               .map_err(|_| "Invalid uniform name: contains null byte")?;
+            let c_str =
+                CString::new(name).map_err(|_| "Invalid uniform name: contains null byte")?;
             Ok(gl::GetUniformLocation(program, c_str.as_ptr() as *const i8))
         }
     }
-    
+
     /// Get shader parameter
     pub fn get_shader_iv(&self, shader: u32, pname: u32, params: &mut i32) -> Result<(), String> {
         self.check_initialized()?;
@@ -131,7 +135,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Get shader info log
     pub fn get_shader_info_log(&self, shader: u32) -> Result<String, String> {
         self.check_initialized()?;
@@ -139,12 +143,17 @@ impl GlWrapper {
             let mut len = 0;
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
             let mut buffer = vec![0u8; len as usize];
-            gl::GetShaderInfoLog(shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+            gl::GetShaderInfoLog(
+                shader,
+                len,
+                std::ptr::null_mut(),
+                buffer.as_mut_ptr() as *mut i8,
+            );
             let error = String::from_utf8_lossy(&buffer).to_string();
             Ok(error)
         }
     }
-    
+
     /// Get program parameter
     pub fn get_program_iv(&self, program: u32, pname: u32, params: &mut i32) -> Result<(), String> {
         self.check_initialized()?;
@@ -153,7 +162,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Get program info log
     pub fn get_program_info_log(&self, program: u32) -> Result<String, String> {
         self.check_initialized()?;
@@ -161,12 +170,17 @@ impl GlWrapper {
             let mut len = 0;
             gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
             let mut buffer = vec![0u8; len as usize];
-            gl::GetProgramInfoLog(program, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+            gl::GetProgramInfoLog(
+                program,
+                len,
+                std::ptr::null_mut(),
+                buffer.as_mut_ptr() as *mut i8,
+            );
             let error = String::from_utf8_lossy(&buffer).to_string();
             Ok(error)
         }
     }
-    
+
     /// Bind vertex array object
     pub fn bind_vertex_array(&self, vao: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -175,7 +189,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Draw arrays
     pub fn draw_arrays(&self, mode: u32, first: i32, count: i32) -> Result<(), String> {
         debug_assert!(self.initialized, "GlWrapper must be initialized before use");
@@ -185,7 +199,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Create shader
     pub fn create_shader(&self, shader_type: u32) -> Result<u32, String> {
         self.check_initialized()?;
@@ -197,7 +211,7 @@ impl GlWrapper {
             Ok(shader)
         }
     }
-    
+
     /// Set shader source
     pub fn set_shader_source(&self, shader: u32, source: &str) -> Result<(), String> {
         self.check_initialized()?;
@@ -207,29 +221,34 @@ impl GlWrapper {
             Ok(())
         }
     }
-    
+
     /// Compile shader
     pub fn compile_shader(&self, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
             gl::CompileShader(shader);
-            
+
             let mut success = 0;
             gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
-            
+
             if success == 0 {
                 let mut len = 0;
                 gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
                 let mut buffer = vec![0u8; len as usize];
-                gl::GetShaderInfoLog(shader, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                gl::GetShaderInfoLog(
+                    shader,
+                    len,
+                    std::ptr::null_mut(),
+                    buffer.as_mut_ptr() as *mut i8,
+                );
                 let error = String::from_utf8_lossy(&buffer).to_string();
                 return Err(format!("Shader compilation failed: {}", error));
             }
-            
+
             Ok(())
         }
     }
-    
+
     /// Create program
     pub fn create_program(&self) -> Result<u32, String> {
         self.check_initialized()?;
@@ -241,7 +260,7 @@ impl GlWrapper {
             Ok(program)
         }
     }
-    
+
     /// Attach shader to program
     pub fn attach_shader(&self, program: u32, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -250,29 +269,34 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Link program
     pub fn link_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
             gl::LinkProgram(program);
-            
+
             let mut success = 0;
             gl::GetProgramiv(program, gl::LINK_STATUS, &mut success);
-            
+
             if success == 0 {
                 let mut len = 0;
                 gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
                 let mut buffer = vec![0u8; len as usize];
-                gl::GetProgramInfoLog(program, len, std::ptr::null_mut(), buffer.as_mut_ptr() as *mut i8);
+                gl::GetProgramInfoLog(
+                    program,
+                    len,
+                    std::ptr::null_mut(),
+                    buffer.as_mut_ptr() as *mut i8,
+                );
                 let error = String::from_utf8_lossy(&buffer).to_string();
                 return Err(format!("Program linking failed: {}", error));
             }
-            
+
             Ok(())
         }
     }
-    
+
     /// Delete shader
     pub fn delete_shader(&self, shader: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -281,23 +305,26 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Generate vertex array object
     pub fn gen_vertex_array(&self) -> Result<u32, String> {
         self.check_initialized()?;
         unsafe {
             let mut vao = 0;
             gl::GenVertexArrays(1, &mut vao);
-            
+
             if vao == 0 {
                 let error = gl::GetError();
-                return Err(format!("Failed to generate vertex array object. OpenGL error: {}", error));
+                return Err(format!(
+                    "Failed to generate vertex array object. OpenGL error: {}",
+                    error
+                ));
             }
-            
+
             Ok(vao)
         }
     }
-    
+
     /// Generate buffer
     pub fn gen_buffer(&self) -> Result<u32, String> {
         self.check_initialized()?;
@@ -307,13 +334,16 @@ impl GlWrapper {
 
             if buffer == 0 {
                 let error = gl::GetError();
-                return Err(format!("Failed to generate buffer. OpenGL error: {}", error));
+                return Err(format!(
+                    "Failed to generate buffer. OpenGL error: {}",
+                    error
+                ));
             }
 
             Ok(buffer)
         }
     }
-    
+
     /// Bind buffer
     pub fn bind_buffer(&self, target: u32, buffer: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -322,36 +352,47 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set buffer data
     pub fn set_buffer_data(&self, target: u32, data: &[f32], usage: u32) -> Result<(), String> {
         self.check_initialized()?;
-        
-        let byte_count = data.len()
+
+        let byte_count = data
+            .len()
             .checked_mul(std::mem::size_of::<f32>())
             .and_then(|v| v.try_into().ok())
             .ok_or_else(|| "Buffer size overflow: data too large for OpenGL buffer".to_string())?;
-        
+
         unsafe {
-            gl::BufferData(
-                target,
-                byte_count,
-                data.as_ptr() as *const _,
-                usage,
+            gl::BufferData(target, byte_count, data.as_ptr() as *const _, usage);
+        }
+        Ok(())
+    }
+
+    /// Set vertex attribute pointer
+    pub fn set_vertex_attrib_pointer(
+        &self,
+        index: u32,
+        size: i32,
+        data_type: u32,
+        normalized: bool,
+        stride: i32,
+        offset: usize,
+    ) -> Result<(), String> {
+        self.check_initialized()?;
+        unsafe {
+            gl::VertexAttribPointer(
+                index,
+                size,
+                data_type,
+                normalized as u8,
+                stride,
+                offset as *const std::ffi::c_void,
             );
         }
         Ok(())
     }
-    
-    /// Set vertex attribute pointer
-    pub fn set_vertex_attrib_pointer(&self, index: u32, size: i32, data_type: u32, normalized: bool, stride: i32, offset: usize) -> Result<(), String> {
-        self.check_initialized()?;
-        unsafe {
-            gl::VertexAttribPointer(index, size, data_type, normalized as u8, stride, offset as *const std::ffi::c_void);
-        }
-        Ok(())
-    }
-    
+
     /// Enable vertex attribute array
     pub fn enable_vertex_attrib_array(&self, index: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -360,7 +401,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Delete program
     pub fn delete_program(&self, program: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -369,7 +410,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Delete vertex array object
     pub fn delete_vertex_array(&self, vao: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -378,7 +419,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Delete buffer
     pub fn delete_buffer(&self, buffer: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -387,9 +428,9 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     // ===== TEXTURE METHODS =====
-    
+
     /// Generate texture
     pub fn gen_texture(&self) -> Result<u32, String> {
         self.check_initialized()?;
@@ -399,7 +440,7 @@ impl GlWrapper {
         }
         Ok(texture)
     }
-    
+
     /// Bind texture
     pub fn bind_texture(&self, target: u32, texture: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -408,7 +449,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set texture parameter
     pub fn tex_parameter_i(&self, target: u32, pname: u32, param: i32) -> Result<(), String> {
         self.check_initialized()?;
@@ -417,9 +458,20 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Upload texture image data
-    pub fn tex_image_2d(&self, target: u32, level: i32, internal_format: i32, width: i32, height: i32, border: i32, format: u32, data_type: u32, data: Option<&[u8]>) -> Result<(), String> {
+    pub fn tex_image_2d(
+        &self,
+        target: u32,
+        level: i32,
+        internal_format: i32,
+        width: i32,
+        height: i32,
+        border: i32,
+        format: u32,
+        data_type: u32,
+        data: Option<&[u8]>,
+    ) -> Result<(), String> {
         self.check_initialized()?;
         unsafe {
             gl::TexImage2D(
@@ -431,12 +483,13 @@ impl GlWrapper {
                 border,
                 format,
                 data_type,
-                data.map(|d| d.as_ptr() as *const std::ffi::c_void).unwrap_or(std::ptr::null())
+                data.map(|d| d.as_ptr() as *const std::ffi::c_void)
+                    .unwrap_or(std::ptr::null()),
             );
         }
         Ok(())
     }
-    
+
     /// Delete texture
     pub fn delete_texture(&self, texture: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -445,7 +498,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Generate mipmaps for the currently bound texture
     pub fn generate_mipmap(&self, target: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -454,7 +507,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set uniform for texture sampler
     pub fn set_uniform_1i(&self, location: i32, value: i32) -> Result<(), String> {
         self.check_initialized()?;
@@ -463,7 +516,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set uniform for float value
     pub fn set_uniform_1f(&self, location: i32, value: f32) -> Result<(), String> {
         self.check_initialized()?;
@@ -472,7 +525,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Set pixel store parameter
     pub fn pixel_store_i(&self, pname: u32, param: i32) -> Result<(), String> {
         self.check_initialized()?;
@@ -481,7 +534,7 @@ impl GlWrapper {
         }
         Ok(())
     }
-    
+
     /// Activate texture unit
     pub fn active_texture(&self, texture: u32) -> Result<(), String> {
         self.check_initialized()?;
@@ -492,6 +545,5 @@ impl GlWrapper {
     }
 }
 
-
 #[cfg(test)]
-mod tests { }
+mod tests {}

@@ -6,7 +6,7 @@ use glam::Vec2;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Basic Renderer Example");
     println!("Demonstrating the safe OpenGL wrapper and renderer capabilities");
-    
+
     // Create a custom configuration
     let config = EngineConfig {
         window_title: "Rust 2D Engine - Renderer Example".to_string(),
@@ -19,63 +19,65 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         viewport: engine_2d::engine::config::ViewportConfig::ui_based(),
         fallback_font_path: "assets/fonts/default.ttf".to_string(),
     };
-    
+
     // Create engine
     let mut engine = Engine::new_with_config(config)?;
-    
+
     println!("Engine created successfully!");
-    println!("Window: {} ({}x{})", 
-             engine.get_window_manager().get_title(),
-             engine.get_window_manager().get_size().0,
-             engine.get_window_manager().get_size().1);
-    
+    println!(
+        "Window: {} ({}x{})",
+        engine.get_window_manager().get_title(),
+        engine.get_window_manager().get_size().0,
+        engine.get_window_manager().get_size().1
+    );
+
     // Demonstrate renderer creation and safe wrapper usage
     println!("\n=== Renderer Demonstration ===");
-    
+
     // Create a renderer (safe, no OpenGL context needed yet)
     let mut renderer = Renderer::new();
     println!("✅ Renderer created successfully");
-    
+
     // Try to initialize renderer (will fail gracefully without OpenGL context)
     println!("Attempting to initialize renderer without OpenGL context...");
     match renderer.initialize() {
         Ok(()) => println!("✅ Renderer initialized with OpenGL context"),
         Err(e) => println!("⚠️  Renderer initialization failed (expected): {}", e),
     }
-    
+
     // Try to clear screen (will fail gracefully)
     println!("Attempting to clear screen without OpenGL context...");
     match renderer.clear(0.2, 0.3, 0.3, 1.0) {
         Ok(()) => println!("✅ Screen cleared successfully"),
         Err(e) => println!("⚠️  Screen clear failed (expected): {}", e),
     }
-    
+
     // Try to draw a rectangle (will fail gracefully)
     println!("Attempting to draw rectangle without OpenGL context...");
     let position = Vec2::new(0.0, 0.0);
     let size = Vec2::new(0.2, 0.2);
     let color = (1.0, 0.0, 0.0); // Red
-    
+
     match renderer.draw_rect(position, size, color) {
         Ok(()) => println!("✅ Rectangle drawn successfully"),
         Err(e) => println!("⚠️  Rectangle drawing failed (expected): {}", e),
     }
-    
+
     println!("\n=== Safe Wrapper Features ===");
     println!("✅ All unsafe OpenGL code contained in GlWrapper");
     println!("✅ Error handling with Result types");
     println!("✅ Graceful failure when OpenGL not initialized");
     println!("✅ Clean API for engine users");
     println!("✅ No unsafe code visible to engine users");
-    
+
     println!("\n=== Engine Integration ===");
     println!("✅ Engine automatically creates OpenGL context");
     println!("✅ Engine automatically initializes renderer");
     println!("✅ Engine handles rendering in game loop");
     println!("✅ You'll see colored rectangles when the engine runs!");
-    
+
     println!("\nPress 'Q' or 'ESC' to quit");
-    
+
     // Run the engine
     engine.run()?;
     Ok(())
