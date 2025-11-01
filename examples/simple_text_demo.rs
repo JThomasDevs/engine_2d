@@ -1,12 +1,14 @@
 use engine_2d::animation::Animation;
 use engine_2d::engine::window::{WindowEvent, WindowManager};
-use engine_2d::render::simple_text::{Font, SimpleTextRenderer, TextAnchor};
+use engine_2d::render::simple_text::SimpleTextRenderer;
 use engine_2d::render::sprite::SpriteRenderer;
+use engine_2d::render::text::{Text, TextBox, BoxAnchor, TextAlign, VerticalAlign, TextWrap};
+use glam::Vec2;
 use glfw::{Action, Key};
 
 const DEFAULT_FONT_PATH: &str = "assets/fonts/default.ttf";
 
-/// Simple text rendering demo showcasing the new intuitive API
+/// Simple text rendering demo showcasing the new TextBox anchoring system
 pub struct SimpleTextDemo {
     current_demo: usize,
     demos: Vec<&'static str>,
@@ -20,13 +22,11 @@ impl SimpleTextDemo {
             current_demo: 0,
             demos: vec![
                 "Basic Text",
-                "Colored Text",
-                "Aligned Text",
-                "Styled Text",
-                "Mixed Content",
+                "Text Boxes",
+                "9-Point Anchors",
+                "Vertical Alignment",
                 "Text Wrapping",
-                "Anchor Points",
-                "Variable Length Anchors",
+                "Mixed Examples",
             ],
             last_action_states: std::collections::HashMap::new(),
             fonts_registered: false,
@@ -36,8 +36,9 @@ impl SimpleTextDemo {
     /// Register fonts with the text renderer
     fn register_fonts(&mut self, text_renderer: &mut SimpleTextRenderer) {
         if !self.fonts_registered {
-            let default_font = Font::new("default", DEFAULT_FONT_PATH);
-            text_renderer.register_font("default", default_font);
+            text_renderer
+                .load_font("default", DEFAULT_FONT_PATH, 16)
+                .unwrap_or_else(|e| println!("Warning: Failed to load font: {}", e));
             self.fonts_registered = true;
         }
     }
@@ -47,542 +48,342 @@ impl SimpleTextDemo {
         text_renderer: &mut SimpleTextRenderer,
         demo_name: &str,
     ) -> Result<(), String> {
+        let renderer = text_renderer.get_renderer_mut();
+
         match demo_name {
             "Basic Text" => {
-                // Using the new fluent API
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Simple Text Demo", 0.5, 0.1)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Basic Text Rendering", 0.5, 0.2)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("This is normal text", 0.1, 0.4)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .draw("More text here", 0.1, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .draw("And even more text", 0.1, 0.6)?;
+                // Basic text without boxes (legacy mode)
+                let mut title = Text::new(
+                    "Text Box Demo".to_string(),
+                    Vec2::new(0.5, 0.95),
+                    "default".to_string(),
+                );
+                title.config.color = (1.0, 1.0, 0.0);
+                title.config.align = TextAlign::Center;
+                renderer.render_text(&title)?;
 
-                // Example using top-left coordinate system with colored text
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 0.0, 1.0)
-                    .draw("Top-left coords (0.1, 0.1)", 0.1, 0.1)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 1.0)
-                    .draw("Top-right coords (0.9, 0.1)", 0.9, 0.1)?;
-            }
-            "Colored Text" => {
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Colored Text", 0.5, 0.1)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.0, 0.0)
-                    .draw("Red text", 0.1, 0.3)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(0.0, 1.0, 0.0)
-                    .draw("Green text", 0.1, 0.4)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(0.0, 0.0, 1.0)
-                    .draw("Blue text", 0.1, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .draw("Yellow text", 0.1, 0.6)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.0, 1.0)
-                    .draw("Purple text", 0.1, 0.7)?;
-            }
-            "Aligned Text" => {
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Text Alignment", 0.5, 0.1)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .align(engine_2d::render::text::TextAlign::Left)
-                    .draw("Left aligned text", 0.1, 0.3)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Centered text", 0.5, 0.4)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .align(engine_2d::render::text::TextAlign::Right)
-                    .draw("Right aligned text", 0.9, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .align(engine_2d::render::text::TextAlign::Left)
-                    .draw("Left again", 0.1, 0.6)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Center again", 0.5, 0.7)?;
-            }
-            "Styled Text" => {
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Text Styles", 0.5, 0.1)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("This is info text", 0.1, 0.3)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.5, 0.0)
-                    .draw("This is warning text", 0.1, 0.4)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.0, 0.0)
-                    .draw("This is error text", 0.1, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(0.0, 1.0, 0.0)
-                    .draw("This is success text", 0.1, 0.6)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 1.0)
-                    .alpha(0.7)
-                    .draw("Semi-transparent text", 0.1, 0.7)?;
-            }
-            "Mixed Content" => {
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Mixed Content Demo", 0.5, 0.05)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Combining different styles", 0.5, 0.15)?;
+                let mut text1 = Text::new(
+                    "Simple text without box".to_string(),
+                    Vec2::new(0.1, 0.8),
+                    "default".to_string(),
+                );
+                renderer.render_text(&text1)?;
 
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("Game Status:", 0.1, 0.25)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(0.0, 1.0, 0.0)
-                    .draw("✓ Player Connected", 0.15, 0.3)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("ℹ Score: 1,250 points", 0.15, 0.35)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.5, 0.0)
-                    .draw("⚠ Low Health: 25%", 0.15, 0.4)?;
+                let mut text2 = Text::new(
+                    "Another simple text".to_string(),
+                    Vec2::new(0.1, 0.7),
+                    "default".to_string(),
+                );
+                text2.config.color = (0.0, 1.0, 1.0);
+                renderer.render_text(&text2)?;
+            }
+            "Text Boxes" => {
+                // Demo title
+                let mut title = Text::new(
+                    "Text Box Examples".to_string(),
+                    Vec2::new(0.5, 0.95),
+                    "default".to_string(),
+                );
+                title.config.color = (1.0, 1.0, 0.0);
+                title.config.align = TextAlign::Center;
+                renderer.render_text(&title)?;
 
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("Controls:", 0.1, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("WASD - Move", 0.15, 0.55)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("Space - Jump", 0.15, 0.6)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .draw("ESC - Menu", 0.15, 0.65)?;
+                // Box 1: Top-left anchor, small box
+                let box1 = TextBox::with_anchor(
+                    Vec2::new(0.1, 0.8),
+                    0.25,
+                    0.1,
+                    BoxAnchor::TopLeft,
+                );
+                let mut text1 = Text::new(
+                    "Top-Left Box".to_string(),
+                    Vec2::new(0.0, 0.0), // Ignored when box is set
+                    "default".to_string(),
+                );
+                text1.config.bounding_box = Some(box1);
+                text1.config.color = (1.0, 0.0, 0.0);
+                renderer.render_text(&text1)?;
 
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Press SPACE for next demo", 0.5, 0.8)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Press ESC to exit", 0.5, 0.85)?;
+                // Box 2: Center anchor, medium box
+                let box2 = TextBox::with_anchor(
+                    Vec2::new(0.5, 0.5),
+                    0.4,
+                    0.2,
+                    BoxAnchor::MiddleCenter,
+                );
+                let mut text2 = Text::new(
+                    "Centered Box".to_string(),
+                    Vec2::new(0.0, 0.0),
+                    "default".to_string(),
+                );
+                text2.config.bounding_box = Some(box2);
+                text2.config.color = (0.0, 1.0, 0.0);
+                text2.config.align = TextAlign::Center;
+                text2.config.vertical_align = VerticalAlign::Middle;
+                renderer.render_text(&text2)?;
+
+                // Box 3: Top-right anchor
+                let box3 = TextBox::with_anchor(
+                    Vec2::new(0.9, 0.8),
+                    0.25,
+                    0.1,
+                    BoxAnchor::TopRight,
+                );
+                let mut text3 = Text::new(
+                    "Top-Right Box".to_string(),
+                    Vec2::new(0.0, 0.0),
+                    "default".to_string(),
+                );
+                text3.config.bounding_box = Some(box3);
+                text3.config.color = (0.0, 0.0, 1.0);
+                text3.config.align = TextAlign::Right;
+                renderer.render_text(&text3)?;
+            }
+            "9-Point Anchors" => {
+                // Demo title
+                let mut title = Text::new(
+                    "9-Point Anchor System".to_string(),
+                    Vec2::new(0.5, 0.95),
+                    "default".to_string(),
+                );
+                title.config.color = (1.0, 1.0, 0.0);
+                title.config.align = TextAlign::Center;
+                renderer.render_text(&title)?;
+
+                // Draw reference crosshairs
+                let positions = [
+                    (0.2, 0.3, "TL"),
+                    (0.5, 0.3, "TC"),
+                    (0.8, 0.3, "TR"),
+                    (0.2, 0.5, "ML"),
+                    (0.5, 0.5, "MC"),
+                    (0.8, 0.5, "MR"),
+                    (0.2, 0.7, "BL"),
+                    (0.5, 0.7, "BC"),
+                    (0.8, 0.7, "BR"),
+                ];
+
+                let anchors = [
+                    BoxAnchor::TopLeft,
+                    BoxAnchor::TopCenter,
+                    BoxAnchor::TopRight,
+                    BoxAnchor::MiddleLeft,
+                    BoxAnchor::MiddleCenter,
+                    BoxAnchor::MiddleRight,
+                    BoxAnchor::BottomLeft,
+                    BoxAnchor::BottomCenter,
+                    BoxAnchor::BottomRight,
+                ];
+
+                let colors = [
+                    (1.0, 0.0, 0.0),
+                    (1.0, 0.5, 0.0),
+                    (1.0, 1.0, 0.0),
+                    (0.0, 1.0, 0.0),
+                    (0.0, 1.0, 1.0),
+                    (0.0, 0.0, 1.0),
+                    (0.5, 0.0, 1.0),
+                    (1.0, 0.0, 1.0),
+                    (1.0, 1.0, 1.0),
+                ];
+
+                for (i, ((x, y, label), (anchor, color))) in
+                    positions.iter().zip(anchors.iter().zip(colors.iter())).enumerate()
+                {
+                    // Draw reference marker
+                    let mut marker = Text::new(
+                        "+".to_string(),
+                        Vec2::new(*x, *y),
+                        "default".to_string(),
+                    );
+                    marker.config.color = (1.0, 0.41, 0.71);
+                    renderer.render_text(&marker)?;
+
+                    // Draw text box with anchor
+                    let text_box = TextBox::with_anchor(Vec2::new(*x, *y), 0.15, 0.08, *anchor);
+                    let mut text = Text::new(label.to_string(), Vec2::new(0.0, 0.0), "default".to_string());
+                    text.config.bounding_box = Some(text_box);
+                    text.config.color = *color;
+                    text.config.align = TextAlign::Center;
+                    text.config.vertical_align = VerticalAlign::Middle;
+                    renderer.render_text(&text)?;
+                }
+            }
+            "Vertical Alignment" => {
+                // Demo title
+                let mut title = Text::new(
+                    "Vertical Alignment".to_string(),
+                    Vec2::new(0.5, 0.95),
+                    "default".to_string(),
+                );
+                title.config.color = (1.0, 1.0, 0.0);
+                title.config.align = TextAlign::Center;
+                renderer.render_text(&title)?;
+
+                let long_text = "This is a longer text that will demonstrate vertical alignment within boxes.";
+
+                // Top aligned
+                let box1 = TextBox::with_anchor(
+                    Vec2::new(0.1, 0.7),
+                    0.25,
+                    0.15,
+                    BoxAnchor::TopLeft,
+                );
+                let mut text1 = Text::new(long_text.to_string(), Vec2::new(0.0, 0.0), "default".to_string());
+                text1.config.bounding_box = Some(box1);
+                text1.config.color = (1.0, 0.0, 0.0);
+                text1.config.vertical_align = VerticalAlign::Top;
+                text1.config.wrap = TextWrap::Word;
+                renderer.render_text(&text1)?;
+
+                // Middle aligned
+                let box2 = TextBox::with_anchor(
+                    Vec2::new(0.4, 0.7),
+                    0.25,
+                    0.15,
+                    BoxAnchor::TopLeft,
+                );
+                let mut text2 = Text::new(long_text.to_string(), Vec2::new(0.0, 0.0), "default".to_string());
+                text2.config.bounding_box = Some(box2);
+                text2.config.color = (0.0, 1.0, 0.0);
+                text2.config.vertical_align = VerticalAlign::Middle;
+                text2.config.wrap = TextWrap::Word;
+                renderer.render_text(&text2)?;
+
+                // Bottom aligned
+                let box3 = TextBox::with_anchor(
+                    Vec2::new(0.7, 0.7),
+                    0.25,
+                    0.15,
+                    BoxAnchor::TopLeft,
+                );
+                let mut text3 = Text::new(long_text.to_string(), Vec2::new(0.0, 0.0), "default".to_string());
+                text3.config.bounding_box = Some(box3);
+                text3.config.color = (0.0, 0.0, 1.0);
+                text3.config.vertical_align = VerticalAlign::Bottom;
+                text3.config.wrap = TextWrap::Word;
+                renderer.render_text(&text3)?;
             }
             "Text Wrapping" => {
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Text Wrapping Demo", 0.5, 0.1)?;
+                // Demo title
+                let mut title = Text::new(
+                    "Text Wrapping in Boxes".to_string(),
+                    Vec2::new(0.5, 0.95),
+                    "default".to_string(),
+                );
+                title.config.color = (1.0, 1.0, 0.0);
+                title.config.align = TextAlign::Center;
+                renderer.render_text(&title)?;
 
-                // Word wrapping example - positioned in top area
-                let long_text = "This is a very long text that should wrap at word boundaries when it exceeds the maximum width. It demonstrates how text wrapping works in the engine.";
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .max_width(0.8)
-                    .draw(long_text, 0.1, 0.25)?;
+                let long_text = "This is a very long text that should wrap at word boundaries when it exceeds the maximum width of the bounding box. It demonstrates how text wrapping works in the engine.";
 
-                // Ellipsis truncation example - positioned in middle area
-                let truncate_text = "This text is too long and will be truncated with ellipsis when it exceeds the maximum width.";
-                text_renderer.font("default").size(14).max_width(0.6).draw(
-                    truncate_text,
-                    0.1,
-                    0.55,
-                )?;
+                // Word wrapping
+                let box1 = TextBox::with_anchor(
+                    Vec2::new(0.1, 0.7),
+                    0.35,
+                    0.2,
+                    BoxAnchor::TopLeft,
+                );
+                let mut text1 = Text::new(long_text.to_string(), Vec2::new(0.0, 0.0), "default".to_string());
+                text1.config.bounding_box = Some(box1);
+                text1.config.color = (0.0, 1.0, 0.0);
+                text1.config.wrap = TextWrap::Word;
+                text1.config.vertical_align = VerticalAlign::Top;
+                renderer.render_text(&text1)?;
 
-                // Labels - positioned above their respective examples
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(0.0, 1.0, 0.0)
-                    .draw("Word Wrapping:", 0.1, 0.2)?;
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.0, 0.0)
-                    .draw("Ellipsis Truncation:", 0.1, 0.5)?;
+                // Ellipsis truncation
+                let box2 = TextBox::with_anchor(
+                    Vec2::new(0.55, 0.7),
+                    0.35,
+                    0.2,
+                    BoxAnchor::TopLeft,
+                );
+                let mut text2 = Text::new(long_text.to_string(), Vec2::new(0.0, 0.0), "default".to_string());
+                text2.config.bounding_box = Some(box2);
+                text2.config.color = (1.0, 0.0, 0.0);
+                text2.config.wrap = TextWrap::Ellipsis;
+                text2.config.vertical_align = VerticalAlign::Top;
+                renderer.render_text(&text2)?;
             }
-            "Anchor Points" => {
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Anchor Points Demo", 0.5, 0.1)?;
+            "Mixed Examples" => {
+                // Demo title
+                let mut title = Text::new(
+                    "Mixed Examples".to_string(),
+                    Vec2::new(0.5, 0.95),
+                    "default".to_string(),
+                );
+                title.config.color = (1.0, 1.0, 0.0);
+                title.config.align = TextAlign::Center;
+                renderer.render_text(&title)?;
 
-                // Draw reference crosshairs at key positions
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.2, 0.3)?; // Top-left reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.5, 0.3)?; // Top-center reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.8, 0.3)?; // Top-right reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.2, 0.5)?; // Middle-left reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.5, 0.5)?; // Middle-center reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.8, 0.5)?; // Middle-right reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.2, 0.7)?; // Bottom-left reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.5, 0.7)?; // Bottom-center reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.8, 0.7)?; // Bottom-right reference
+                // UI panel example (top-left)
+                let panel_box = TextBox::with_padding(
+                    Vec2::new(0.05, 0.15),
+                    0.4,
+                    0.3,
+                    (0.02, 0.02, 0.02, 0.02), // padding: left, right, top, bottom
+                );
+                let mut panel_title = Text::new(
+                    "Game Status".to_string(),
+                    Vec2::new(0.0, 0.0),
+                    "default".to_string(),
+                );
+                panel_title.config.bounding_box = Some(panel_box);
+                panel_title.config.color = (1.0, 1.0, 1.0);
+                panel_title.config.align = TextAlign::Center;
+                panel_title.config.vertical_align = VerticalAlign::Top;
+                renderer.render_text(&panel_title)?;
 
-                // Demonstrate different anchor points
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 0.0, 0.0)
-                    .anchor(TextAnchor::TopLeft)
-                    .draw("TL", 0.2, 0.3)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 0.0, 0.0)
-                    .anchor(TextAnchor::TopCenter)
-                    .draw("TC", 0.5, 0.3)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 0.0, 0.0)
-                    .anchor(TextAnchor::TopRight)
-                    .draw("TR", 0.8, 0.3)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 0.0)
-                    .anchor(TextAnchor::MiddleLeft)
-                    .draw("ML", 0.2, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 0.0)
-                    .anchor(TextAnchor::MiddleCenter)
-                    .draw("MC", 0.5, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 0.0)
-                    .anchor(TextAnchor::MiddleRight)
-                    .draw("MR", 0.8, 0.5)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 0.0, 1.0)
-                    .anchor(TextAnchor::BottomLeft)
-                    .draw("BL", 0.2, 0.7)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 0.0, 1.0)
-                    .anchor(TextAnchor::BottomCenter)
-                    .draw("BC", 0.5, 0.7)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 0.0, 1.0)
-                    .anchor(TextAnchor::BottomRight)
-                    .draw("BR", 0.8, 0.7)?;
+                // Status items
+                let status_text = "✓ Player Connected\nℹ Score: 1,250 points\n⚠ Low Health: 25%";
+                let status_box = TextBox::with_padding(
+                    Vec2::new(0.05, 0.15),
+                    0.4,
+                    0.3,
+                    (0.04, 0.02, 0.06, 0.02),
+                );
+                let mut status = Text::new(status_text.to_string(), Vec2::new(0.0, 0.0), "default".to_string());
+                status.config.bounding_box = Some(status_box);
+                status.config.color = (0.0, 1.0, 0.0);
+                status.config.vertical_align = VerticalAlign::Top;
+                renderer.render_text(&status)?;
 
-                // Show practical examples
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 1.0, 1.0)
-                    .draw("Easy right-edge alignment:", 0.1, 0.85)?;
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 1.0, 0.0)
-                    .anchor(TextAnchor::TopRight)
-                    .draw("Right edge text", 0.95, 0.85)?;
-            }
-            "Variable Length Anchors" => {
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 1.0, 0.0)
-                    .align(engine_2d::render::text::TextAlign::Center)
-                    .draw("Variable Length Text Anchoring", 0.5, 0.05)?;
+                // Right-aligned info box
+                let info_box = TextBox::with_anchor(
+                    Vec2::new(0.95, 0.3),
+                    0.3,
+                    0.15,
+                    BoxAnchor::TopRight,
+                );
+                let mut info = Text::new(
+                    "Press SPACE for next demo\nPress ESC to exit".to_string(),
+                    Vec2::new(0.0, 0.0),
+                    "default".to_string(),
+                );
+                info.config.bounding_box = Some(info_box);
+                info.config.color = (1.0, 1.0, 0.0);
+                info.config.align = TextAlign::Right;
+                info.config.vertical_align = VerticalAlign::Top;
+                renderer.render_text(&info)?;
 
-                // Draw reference crosshairs at key positions
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.2, 0.2)?; // Top-left reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.5, 0.2)?; // Top-center reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.8, 0.2)?; // Top-right reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.2, 0.4)?; // Middle-left reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.5, 0.4)?; // Middle-center reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.8, 0.4)?; // Middle-right reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.2, 0.6)?; // Bottom-left reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.5, 0.6)?; // Bottom-center reference
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 0.41, 0.71)
-                    .draw("+", 0.8, 0.6)?; // Bottom-right reference
-
-                // Short text examples
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 0.0, 0.0)
-                    .anchor(TextAnchor::TopLeft)
-                    .draw("Hi", 0.2, 0.2)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 0.0, 0.0)
-                    .anchor(TextAnchor::TopCenter)
-                    .draw("Hi", 0.5, 0.2)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(1.0, 0.0, 0.0)
-                    .anchor(TextAnchor::TopRight)
-                    .draw("Hi", 0.8, 0.2)?;
-
-                // Medium text examples
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 0.0)
-                    .anchor(TextAnchor::MiddleLeft)
-                    .draw("Hello World", 0.2, 0.4)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 0.0)
-                    .anchor(TextAnchor::MiddleCenter)
-                    .draw("Hello World", 0.5, 0.4)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 0.0)
-                    .anchor(TextAnchor::MiddleRight)
-                    .draw("Hello World", 0.8, 0.4)?;
-
-                // Long text examples
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 0.0, 1.0)
-                    .anchor(TextAnchor::BottomLeft)
-                    .draw("This is a very long text example", 0.2, 0.6)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 0.0, 1.0)
-                    .anchor(TextAnchor::BottomCenter)
-                    .draw("This is a very long text example", 0.5, 0.6)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 0.0, 1.0)
-                    .anchor(TextAnchor::BottomRight)
-                    .draw("This is a very long text example", 0.8, 0.6)?;
-
-                // Additional examples with different sizes
-                text_renderer
-                    .font("default")
-                    .size(12)
-                    .color(1.0, 1.0, 0.0)
-                    .anchor(TextAnchor::TopLeft)
-                    .draw("Small", 0.1, 0.75)?;
-                text_renderer
-                    .font("default")
-                    .size(18)
-                    .color(1.0, 0.5, 0.0)
-                    .anchor(TextAnchor::TopCenter)
-                    .draw("Large Text", 0.5, 0.75)?;
-                text_renderer
-                    .font("default")
-                    .size(10)
-                    .color(0.5, 0.5, 1.0)
-                    .anchor(TextAnchor::TopRight)
-                    .draw("Tiny", 0.9, 0.75)?;
-
-                // Mixed case examples
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.0, 1.0)
-                    .anchor(TextAnchor::MiddleLeft)
-                    .draw("Mixed Case Text", 0.1, 0.85)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.0, 1.0)
-                    .anchor(TextAnchor::MiddleCenter)
-                    .draw("Mixed Case Text", 0.5, 0.85)?;
-                text_renderer
-                    .font("default")
-                    .size(16)
-                    .color(1.0, 0.0, 1.0)
-                    .anchor(TextAnchor::MiddleRight)
-                    .draw("Mixed Case Text", 0.9, 0.85)?;
-
-                // Numbers and symbols
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 1.0)
-                    .anchor(TextAnchor::BottomLeft)
-                    .draw("12345", 0.1, 0.95)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 1.0)
-                    .anchor(TextAnchor::BottomCenter)
-                    .draw("!@#$%", 0.5, 0.95)?;
-                text_renderer
-                    .font("default")
-                    .size(14)
-                    .color(0.0, 1.0, 1.0)
-                    .anchor(TextAnchor::BottomRight)
-                    .draw("ABCDEF", 0.9, 0.95)?;
+                // Centered dialog box
+                let dialog_box = TextBox::with_anchor(
+                    Vec2::new(0.5, 0.6),
+                    0.5,
+                    0.2,
+                    BoxAnchor::MiddleCenter,
+                );
+                let mut dialog = Text::new(
+                    "Welcome to the Text Box Demo!\nThis demonstrates the new anchoring system.".to_string(),
+                    Vec2::new(0.0, 0.0),
+                    "default".to_string(),
+                );
+                dialog.config.bounding_box = Some(dialog_box);
+                dialog.config.color = (1.0, 1.0, 1.0);
+                dialog.config.align = TextAlign::Center;
+                dialog.config.vertical_align = VerticalAlign::Middle;
+                dialog.config.wrap = TextWrap::Word;
+                renderer.render_text(&dialog)?;
             }
             _ => {}
         }
@@ -605,32 +406,47 @@ impl Animation for SimpleTextDemo {
             // Register fonts if not already registered
             self.register_fonts(tr);
 
-            // Viewport is configured at engine initialization
-            // Text is viewport-independent by default - font size 20 looks the same regardless of viewport scale
-
-            // Render the current demo (fonts are loaded on-demand)
+            // Render the current demo
             if let Err(e) = self.render_demo(tr, self.demos[self.current_demo]) {
                 println!("Error rendering demo: {}", e);
             }
 
-            // Show demo info (top of screen) using top-left coordinates
+            // Show demo info (top-left) using a text box
+            let renderer = tr.get_renderer_mut();
             let demo_info = format!(
                 "Demo {} of {}: {}",
                 self.current_demo + 1,
                 self.demos.len(),
                 self.demos[self.current_demo]
             );
-            let _ = tr.draw_text_top_left(&demo_info, 0.02, 0.02, "default", DEFAULT_FONT_PATH, 14);
-
-            // Show controls (bottom of screen) using top-left coordinates
-            let _ = tr.draw_text_top_left(
-                "SPACE=Next | BACKSPACE=Prev | ESC=Exit",
-                0.02,
-                0.98,
-                "default",
-                DEFAULT_FONT_PATH,
-                14,
+            let info_box = TextBox::with_anchor(
+                Vec2::new(0.02, 0.98),
+                0.4,
+                0.05,
+                BoxAnchor::TopLeft,
             );
+            let mut info_text = Text::new(demo_info, Vec2::new(0.0, 0.0), "default".to_string());
+            info_text.config.bounding_box = Some(info_box);
+            info_text.config.color = (1.0, 1.0, 1.0);
+            info_text.config.vertical_align = VerticalAlign::Top;
+            let _ = renderer.render_text(&info_text);
+
+            // Show controls (bottom-left) using a text box
+            let controls_box = TextBox::with_anchor(
+                Vec2::new(0.02, 0.05),
+                0.5,
+                0.05,
+                BoxAnchor::BottomLeft,
+            );
+            let mut controls_text = Text::new(
+                "SPACE=Next | BACKSPACE=Prev | ESC=Exit".to_string(),
+                Vec2::new(0.0, 0.0),
+                "default".to_string(),
+            );
+            controls_text.config.bounding_box = Some(controls_box);
+            controls_text.config.color = (1.0, 1.0, 1.0);
+            controls_text.config.vertical_align = VerticalAlign::Bottom;
+            let _ = renderer.render_text(&controls_text);
         }
 
         // Print demo info every 5 seconds
@@ -683,17 +499,13 @@ fn main() {
     let config = engine_2d::engine::config::EngineConfig {
         window_width: 1024,
         window_height: 768,
-        window_title: "Simple Text Demo".to_string(),
+        window_title: "Text Box Demo".to_string(),
         target_fps: Some(60),
         show_fps: false,
         vsync: true,
         fullscreen: false,
-        // Configure viewport - you can choose from several presets or create custom bounds
-        viewport: engine_2d::engine::config::ViewportConfig::default(), // Default: (-1, 1, -1, 1)
-        // viewport: engine_2d::engine::config::ViewportConfig::ndc(), // Traditional OpenGL: (-10, 10, -10, 10)
-        // viewport: engine_2d::engine::config::ViewportConfig::ui_based(), // UI coordinates: (0, 1, 0, 1)
-        // viewport: engine_2d::engine::config::ViewportConfig::pixel_based(1024.0, 768.0), // Pixel coordinates
-        // viewport: engine_2d::engine::config::ViewportConfig::with_bounds(-5.0, 5.0, -3.0, 3.0), // Custom bounds
+        // Configure viewport for UI coordinates (0 to 1, 0 to 1)
+        viewport: engine_2d::engine::config::ViewportConfig::ui_based(),
         fallback_font_path: DEFAULT_FONT_PATH.to_string(),
     };
 
@@ -701,8 +513,8 @@ fn main() {
 
     match engine_2d::engine::core::Engine::new_with_config_and_animation(config, animation) {
         Ok(mut engine) => {
-            println!("Simple Text Demo");
-            println!("================");
+            println!("Text Box Demo");
+            println!("=============");
             println!("Controls:");
             println!("  SPACE     - Next Demo");
             println!("  BACKSPACE - Previous Demo");

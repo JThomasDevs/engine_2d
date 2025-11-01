@@ -50,29 +50,5 @@ opengl = ["glfw", "gl", "image", "fontdue"]
 # cocoa = "0.25"
 
 [[example]]
-name = "basic_window"
-required-features = ["opengl"]
-
-[[example]]
-name = "basic_renderer"
-required-features = ["opengl"]
-
-[[example]]
-name = "basic_sprite"
-required-features = ["opengl"]
-
-[[example]]
-name = "custom_animations"
-required-features = ["opengl"]
-
-[[example]]
-name = "pendulum_animation"
-required-features = ["opengl"]
-
-[[example]]
-name = "advanced_window_demo"
-required-features = ["opengl"]
-
-[[example]]
 name = "simple_text_demo"
 required-features = ["opengl"]

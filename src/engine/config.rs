@@ -61,7 +61,7 @@ impl ViewportConfig {
     pub fn ui_based() -> Self {
         Self {
             logical_bounds: (0.0, 1.0, 0.0, 1.0),
-            text_height_fraction: 0.08, // 8% for UI - viewport-relative scaling
+            text_height_fraction: 0.015, // 1.5% for UI - reasonable text size
             base_font_size: 16.0,
             viewport_independent_text: false, // Use viewport-relative scaling for UI coordinates
         }

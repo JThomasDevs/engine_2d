@@ -54,6 +54,35 @@ pub enum TextAlign {
     Right,
 }
 
+/// Vertical alignment options
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum VerticalAlign {
+    Top,
+    Middle,
+    Bottom,
+}
+
+/// 9-point anchor system for bounding box positioning
+/// Determines which point of the bounding box corresponds to the (x, y) coordinates
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum BoxAnchor {
+    TopLeft,      // (x, y) = top-left corner
+    TopCenter,    // (x, y) = top-center point
+    TopRight,     // (x, y) = top-right corner
+    MiddleLeft,   // (x, y) = middle-left point
+    MiddleCenter, // (x, y) = center of box
+    MiddleRight,  // (x, y) = middle-right point
+    BottomLeft,   // (x, y) = bottom-left corner
+    BottomCenter, // (x, y) = bottom-center point
+    BottomRight,  // (x, y) = bottom-right corner
+}
+
+impl Default for BoxAnchor {
+    fn default() -> Self {
+        BoxAnchor::TopLeft
+    }
+}
+
 /// Text wrapping options
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TextWrap {
@@ -63,6 +92,108 @@ pub enum TextWrap {
     Ellipsis,  // Truncate with "..." if too long
 }
 
+/// Bounding box for text with definable size and coordinates
+/// Uses top-left origin coordinate system: (0,0) = top-left, y increases downward
+/// 
+/// Coordinates can be specified in two ways:
+/// 1. Normalized [0,1] space: (0,0) = top-left of viewport, (1,1) = bottom-right
+/// 2. Viewport logical coordinates: Uses the same coordinate system as the viewport's logical bounds
+/// 
+/// The renderer will automatically detect and convert appropriately.
+#[derive(Debug, Clone, Copy)]
+pub struct TextBox {
+    /// Position of the anchor point (in top-left origin coordinates)
+    /// If values are <= 1.0, assumed to be normalized [0,1] space
+    /// Otherwise, assumed to be in viewport logical coordinate space
+    pub position: Vec2,
+    /// Width of the bounding box (same coordinate system as position)
+    pub width: f32,
+    /// Height of the bounding box (same coordinate system as position)
+    pub height: f32,
+    /// Padding inside the box (left, right, top, bottom)
+    pub padding: (f32, f32, f32, f32), // (left, right, top, bottom)
+    /// Anchor point that determines which point of the box corresponds to position
+    pub anchor: BoxAnchor,
+}
+
+impl TextBox {
+    /// Create a new text box with top-left anchor
+    pub fn new(position: Vec2, width: f32, height: f32) -> Self {
+        Self {
+            position,
+            width,
+            height,
+            padding: (0.0, 0.0, 0.0, 0.0),
+            anchor: BoxAnchor::TopLeft,
+        }
+    }
+
+    /// Create a text box with custom anchor point
+    pub fn with_anchor(position: Vec2, width: f32, height: f32, anchor: BoxAnchor) -> Self {
+        Self {
+            position,
+            width,
+            height,
+            padding: (0.0, 0.0, 0.0, 0.0),
+            anchor,
+        }
+    }
+
+    /// Create a text box with padding
+    pub fn with_padding(
+        position: Vec2,
+        width: f32,
+        height: f32,
+        padding: (f32, f32, f32, f32),
+    ) -> Self {
+        Self {
+            position,
+            width,
+            height,
+            padding,
+            anchor: BoxAnchor::TopLeft,
+        }
+    }
+
+    /// Get the top-left corner of the box (accounting for anchor point)
+    /// Returns position in top-left origin coordinate system
+    pub fn top_left(&self) -> Vec2 {
+        let (x_offset, y_offset) = match self.anchor {
+            BoxAnchor::TopLeft => (0.0, 0.0),
+            BoxAnchor::TopCenter => (-self.width / 2.0, 0.0),
+            BoxAnchor::TopRight => (-self.width, 0.0),
+            BoxAnchor::MiddleLeft => (0.0, -self.height / 2.0),
+            BoxAnchor::MiddleCenter => (-self.width / 2.0, -self.height / 2.0),
+            BoxAnchor::MiddleRight => (-self.width, -self.height / 2.0),
+            BoxAnchor::BottomLeft => (0.0, -self.height),
+            BoxAnchor::BottomCenter => (-self.width / 2.0, -self.height),
+            BoxAnchor::BottomRight => (-self.width, -self.height),
+        };
+
+        Vec2::new(self.position.x + x_offset, self.position.y + y_offset)
+    }
+
+    /// Get the content area (box minus padding) in top-left origin coordinates
+    pub fn content_area(&self) -> (Vec2, f32, f32) {
+        let top_left = self.top_left();
+        let content_x = top_left.x + self.padding.0;
+        let content_y = top_left.y + self.padding.2; // top padding
+        let content_width = self.width - self.padding.0 - self.padding.1;
+        let content_height = self.height - self.padding.2 - self.padding.3;
+
+        (Vec2::new(content_x, content_y), content_width, content_height)
+    }
+
+    /// Check if a point (in top-left origin coordinates) is inside the box
+    pub fn contains(&self, point: Vec2) -> bool {
+        let top_left = self.top_left();
+        point.x >= top_left.x
+            && point.x <= top_left.x + self.width
+            && point.y >= top_left.y
+            && point.y <= top_left.y + self.height
+    }
+}
+
 /// Text rendering configuration
 #[derive(Debug, Clone)]
 pub struct TextConfig {
@@ -70,9 +201,13 @@ pub struct TextConfig {
     pub color: (f32, f32, f32),
     pub alpha: f32,
     pub align: TextAlign,
+    pub vertical_align: VerticalAlign,
     pub max_width: Option<f32>,
     pub line_spacing: f32,
     pub wrap: TextWrap,
+    /// Optional bounding box for text. If None, text uses simple position.
+    /// If Some, text is constrained within the box bounds.
+    pub bounding_box: Option<TextBox>,
 }
 
 impl Default for TextConfig {
@@ -82,9 +217,11 @@ impl Default for TextConfig {
             color: (1.0, 1.0, 1.0), // White
             alpha: 1.0,
             align: TextAlign::Left,
+            vertical_align: VerticalAlign::Top,
             max_width: None,
             line_spacing: 1.2,
             wrap: TextWrap::None,
+            bounding_box: None,
         }
     }
 }
@@ -148,6 +285,14 @@ impl Text {
 
     pub fn set_max_width(&mut self, max_width: Option<f32>) {
         self.config.max_width = max_width;
+    }
+
+    pub fn set_vertical_align(&mut self, vertical_align: VerticalAlign) {
+        self.config.vertical_align = vertical_align;
+    }
+
+    pub fn set_bounding_box(&mut self, bounding_box: Option<TextBox>) {
+        self.config.bounding_box = bounding_box;
     }
 }
 
@@ -411,13 +556,169 @@ impl TextRenderer {
         let texture_loc = self.gl.get_uniform_location(shader, "text_texture")?;
         self.gl.set_uniform_1i(texture_loc, 0)?; // Use texture unit 0
 
+        let scale_factor = self.viewport.calculate_scale_factor(font.size as f32);
+
+        // Handle bounding box if present
+        if let Some(ref bounding_box) = text.config.bounding_box {
+            self.render_text_in_box(text, font, shader, vao, bounding_box, scale_factor)?;
+        } else {
+            // Legacy rendering without bounding box
+            self.render_text_legacy(text, font, shader, vao, scale_factor)?;
+        }
+
+        Ok(())
+    }
+
+    /// Render text within a bounding box (top-left origin coordinate system)
+    fn render_text_in_box(
+        &self,
+        text: &Text,
+        font: &FontInfo,
+        shader: u32,
+        vao: u32,
+        bounding_box: &TextBox,
+        scale_factor: f32,
+    ) -> Result<(), String> {
+        // Get content area (box minus padding) in top-left origin coordinates
+        let (content_pos, content_width, content_height) = bounding_box.content_area();
+
+        // Convert top-left origin coordinates to viewport logical coordinates
+        // The viewport's top_left_to_viewport expects normalized coordinates [0,1]
+        // We need to convert from pixel/logical coordinates to normalized first
+        let (x_range, y_range) = self.viewport.get_logical_ranges();
+        let logical_bounds = self.viewport.get_logical_bounds();
+        
+        // Convert content position from top-left origin to viewport logical
+        // Assume content_pos is in the same coordinate space as the viewport's logical bounds
+        // If content_pos is in normalized [0,1] space, convert it
+        let normalized_content_pos = if content_pos.x <= 1.0 && content_pos.y <= 1.0 {
+            // Already normalized [0,1], convert to viewport logical
+            self.viewport.top_left_to_viewport(content_pos)
+        } else {
+            // Assume it's in viewport logical coordinate space already
+            // Convert from top-left origin (y increases down) to viewport logical (y increases up)
+            let viewport_x = logical_bounds.0 + content_pos.x * (x_range / 1.0);
+            let viewport_y = logical_bounds.3 - content_pos.y * (y_range / 1.0);
+            Vec2::new(viewport_x, viewport_y)
+        };
+        
+        // Convert box dimensions (assuming same coordinate system as content_pos)
+        let viewport_content_width = if content_width <= 1.0 {
+            content_width * x_range
+        } else {
+            content_width
+        };
+        let viewport_content_height = if content_height <= 1.0 {
+            content_height * y_range
+        } else {
+            content_height
+        };
+
+        // Process text with wrapping, using content width
+        let mut text_with_wrap = text.clone();
+        text_with_wrap.config.max_width = Some(viewport_content_width);
+        if text_with_wrap.config.wrap == TextWrap::None {
+            text_with_wrap.config.wrap = TextWrap::Word; // Default to word wrap when box is specified
+        }
+        let wrapped_content = self.process_text_wrapping(&text_with_wrap, font);
+
+        // Calculate total text height
+        let line_height = font.line_height * text.config.line_spacing * scale_factor;
+        let line_count = wrapped_content.lines().count().max(1);
+        let total_text_height = line_height * line_count as f32;
+
+        // Calculate starting Y position based on vertical alignment
+        // In viewport logical coordinates (bottom-left origin, y increases upward):
+        // - Top of content area is at normalized_content_pos.y (highest y)
+        // - Bottom of content area is at normalized_content_pos.y - viewport_content_height
+        // - Text starts at the top and goes downward (decreasing y)
+        let start_y_offset = match text.config.vertical_align {
+            VerticalAlign::Top => 0.0,
+            VerticalAlign::Middle => (viewport_content_height - total_text_height) / 2.0,
+            VerticalAlign::Bottom => viewport_content_height - total_text_height,
+        };
+        
+        // Calculate start Y position (in viewport logical coordinates)
+        // Start from top of content area and move down by offset
+        let viewport_start_y = normalized_content_pos.y - start_y_offset;
+
+        // Process each line and calculate horizontal alignment
+        let lines: Vec<&str> = wrapped_content.lines().collect();
+        let mut current_y = viewport_start_y;
+
+        for line in lines {
+            if line.is_empty() {
+                current_y -= line_height;
+                continue;
+            }
+
+            let line_width = self.calculate_text_width(line, font);
+            
+            // Calculate horizontal start position within content area
+            let start_x = match text.config.align {
+                TextAlign::Left => normalized_content_pos.x,
+                TextAlign::Center => normalized_content_pos.x + (viewport_content_width - line_width) / 2.0,
+                TextAlign::Right => normalized_content_pos.x + viewport_content_width - line_width,
+            };
+
+            // Render each character in the line
+            let mut current_x = start_x;
+            for ch in line.chars() {
+                if let Some(glyph) = font.glyphs.get(&ch) {
+                    // Calculate glyph position
+                    let glyph_x = current_x + glyph.bearing.x * scale_factor;
+                    let glyph_y = current_y + glyph.bearing.y * scale_factor;
+
+                    // Check if glyph is within content bounds (basic clipping)
+                    // In viewport logical coordinates: y decreases downward
+                    let glyph_bottom = glyph_y - glyph.size.y * scale_factor;
+                    let glyph_top = glyph_y;
+                    let content_bottom = normalized_content_pos.y - viewport_content_height;
+                    let content_top = normalized_content_pos.y;
+
+                    // Only render if glyph is visible
+                    if glyph_x >= normalized_content_pos.x - 1000.0 // Allow some overflow for wide glyphs
+                        && glyph_x <= normalized_content_pos.x + viewport_content_width + 1000.0
+                        && glyph_bottom >= content_bottom
+                        && glyph_top <= content_top
+                    {
+                        self.render_glyph(
+                            glyph,
+                            Vec2::new(glyph_x, glyph_y),
+                            shader,
+                            vao,
+                            font.size,
+                            scale_factor,
+                        )?;
+                    }
+
+                    // Advance to next character
+                    current_x += glyph.advance * scale_factor;
+                }
+            }
+
+            // Move to next line
+            current_y -= line_height;
+        }
+
+        Ok(())
+    }
+
+    /// Legacy rendering without bounding box (for backward compatibility)
+    fn render_text_legacy(
+        &self,
+        text: &Text,
+        font: &FontInfo,
+        shader: u32,
+        vao: u32,
+        scale_factor: f32,
+    ) -> Result<(), String> {
         // Process text with wrapping
         let wrapped_content = self.process_text_wrapping(text, font);
 
         // Calculate text width for alignment (use first line for alignment)
         let first_line = wrapped_content.lines().next().unwrap_or("");
         let text_width = self.calculate_text_width(first_line, font);
-        let scale_factor = self.viewport.calculate_scale_factor(font.size as f32);
 
         let start_x = match text.config.align {
             TextAlign::Left => {
